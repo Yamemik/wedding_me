@@ -75,16 +75,16 @@ class OnboardingNavigation extends StatelessWidget {
                           curve: Curves.ease,
                         );
                       },
-                child: Text(
-                  currentPage == pageCount - 1 
-                      ? 'Начать' 
-                      : 'Далее',
-                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.pink,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
+                ),
+                child: Text(
+                  currentPage == pageCount - 1 
+                      ? 'Начать' 
+                      : 'Далее',
                 ),
               ),
             ],

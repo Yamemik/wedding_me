@@ -5,7 +5,7 @@ class AuthAlternativeAction extends StatelessWidget {
   final String actionText;
   final VoidCallback onAction;
 
-  const AuthAlternativeAction({
+  const AuthAlternativeAction({super.key, 
     required this.text,
     required this.actionText,
     required this.onAction,
