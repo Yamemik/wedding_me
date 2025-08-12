@@ -1,41 +1,46 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.exc import NoResultFound
 
-from .models import Album
-from .schemas import AlbumCreate, AlbumUpdate
+from src.modules.albums.models import Album
+from src.modules.albums.schemas import AlbumCreate, AlbumUpdate
 
 
-async def get_by_id(db: AsyncSession, album_id: int) -> Optional[Album]:
+async def get_album(db: AsyncSession, album_id: int) -> Optional[Album]:
     result = await db.execute(select(Album).where(Album.id == album_id))
     return result.scalar_one_or_none()
 
 
-async def get_all(db: AsyncSession) -> List[Album]:
-    result = await db.execute(select(Album))
+async def list_albums(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[Album]:
+    result = await db.execute(select(Album).offset(skip).limit(limit))
     return result.scalars().all()
 
 
-async def create(db: AsyncSession, obj_in: AlbumCreate) -> Album:
-    db_obj = Album(**obj_in.model_dump())
+async def create_album(db: AsyncSession, payload: AlbumCreate) -> Album:
+    db_obj = Album(title=payload.title, visible=payload.visible, user_id=payload.user_id)
     db.add(db_obj)
     await db.commit()
     await db.refresh(db_obj)
     return db_obj
 
 
-async def update(db: AsyncSession, db_obj: Album, obj_in: AlbumUpdate) -> Album:
-    obj_data = obj_in.model_dump(exclude_unset=True)
-    for field, value in obj_data.items():
-        setattr(db_obj, field, value)
-
-    db.add(db_obj)
+async def update_album(db: AsyncSession, album_id: int, payload: AlbumUpdate) -> Optional[Album]:
+    album = await get_album(db, album_id)
+    if not album:
+        return None
+    data = payload.model_dump(exclude_none=True)
+    for k, v in data.items():
+        setattr(album, k, v)
+    db.add(album)
     await db.commit()
-    await db.refresh(db_obj)
-    return db_obj
+    await db.refresh(album)
+    return album
 
 
-async def delete(db: AsyncSession, db_obj: Album) -> None:
-    await db.delete(db_obj)
+async def delete_album(db: AsyncSession, album_id: int) -> bool:
+    album = await get_album(db, album_id)
+    if not album:
+        return False
+    await db.delete(album)
     await db.commit()
+    return True
