@@ -12,10 +12,10 @@ passlib = "*"
 python-jose = "*"
 pydantic = {extras = ["email"], version = "*"}
 python-multipart = "*"
-psycopg2 = "*"
 fastapi = "*"
 uvicorn = "*"
 bcrypt = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 
