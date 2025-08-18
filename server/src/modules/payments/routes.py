@@ -5,7 +5,7 @@ from src.common.dependencies import get_db
 from src.modules.payments import schemas, services
 
 
-router = APIRouter(prefix="/payments", tags=["Payments"])
+router = APIRouter()
 
 @router.post("/", response_model=schemas.PaymentBase)
 async def create_payment(payment_in: schemas.PaymentCreate, db: AsyncSession = Depends(get_db)):

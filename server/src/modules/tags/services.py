@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+
 from src.modules.tags.models import Tag
 from src.modules.tags.schemas import TagCreate, TagUpdate
 

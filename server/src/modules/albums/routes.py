@@ -4,7 +4,7 @@ from src.common.dependencies import get_db
 from src.modules.albums import schemas, services
 
 
-router = APIRouter(prefix="/albums", tags=["Albums"])
+router = APIRouter()
 
 @router.post("/", response_model=schemas.AlbumBase)
 async def create_album(album_in: schemas.AlbumCreate, db: AsyncSession = Depends(get_db)):

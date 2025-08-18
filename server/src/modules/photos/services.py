@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+
 from src.modules.photos.models import Photo
 from src.modules.photos.schemas import PhotoCreate, PhotoUpdate
 

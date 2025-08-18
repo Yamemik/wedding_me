@@ -5,7 +5,7 @@ from src.common.dependencies import get_db
 from src.modules.photos import schemas, services
 
 
-router = APIRouter(prefix="/photos", tags=["Photos"])
+router = APIRouter()
 
 @router.post("/", response_model=schemas.PhotoBase)
 async def create_photo(photo_in: schemas.PhotoCreate, db: AsyncSession = Depends(get_db)):

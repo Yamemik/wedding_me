@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+
 from src.modules.likes.models import Like
 from src.modules.likes.schemas import LikeCreate, LikeUpdate
 

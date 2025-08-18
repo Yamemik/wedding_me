@@ -3,7 +3,6 @@ from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
-from src.db.run_migrations import run_migrations_if_needed
 from src.config.settings import settings
 from src.api.router import api_router
 from src.db.init_db import init_db
@@ -12,7 +11,6 @@ from src.db.session import engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await run_migrations_if_needed()
     
     await init_db()
     

@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.modules.payments import Payment
+
+from src.modules.payments.models import Payment
 from src.modules.payments.schemas import PaymentCreate, PaymentUpdate
 
 

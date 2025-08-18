@@ -5,7 +5,7 @@ from src.common.dependencies import get_db
 from src.modules.tags import schemas, services
 
 
-router = APIRouter(prefix="/tags", tags=["Tags"])
+router = APIRouter()
 
 @router.post("/", response_model=schemas.TagBase)
 async def create_tag(tag_in: schemas.TagCreate, db: AsyncSession = Depends(get_db)):

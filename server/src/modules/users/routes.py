@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 # 📌 Создать нового пользователя
-@router.post("/", response_model=schemas.UserBase, tags=["Users"])
+@router.post("/", response_model=schemas.UserBase)
 async def create_user(user_in: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
     existing = await services.get_user_by_email(db, user_in.email)
     if existing:
@@ -21,13 +21,13 @@ async def create_user(user_in: schemas.UserCreate, db: AsyncSession = Depends(ge
 
 
 # 📌 Получить список пользователей
-@router.get("/", response_model=list[schemas.UserBase], tags=["Users"])
+@router.get("/", response_model=list[schemas.UserBase])
 async def read_users(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
     return await services.get_users(db, skip=skip, limit=limit)
 
 
 # 📌 Получить пользователя по ID
-@router.get("/{user_id}", response_model=schemas.UserBase, tags=["Users"])
+@router.get("/{user_id}", response_model=schemas.UserBase)
 async def read_user(user_id: int, db: AsyncSession = Depends(get_db)):
     db_user = await services.get_user(db, user_id)
     if not db_user:
@@ -36,7 +36,7 @@ async def read_user(user_id: int, db: AsyncSession = Depends(get_db)):
 
 
 # 📌 Обновить пользователя
-@router.put("/{user_id}", response_model=schemas.UserBase, tags=["Users"])
+@router.put("/{user_id}", response_model=schemas.UserBase)
 async def update_user(user_id: int, user_in: schemas.UserUpdate, db: AsyncSession = Depends(get_db)):
     db_user = await services.update_user(db, user_id, user_in)
     if not db_user:
@@ -45,7 +45,7 @@ async def update_user(user_id: int, user_in: schemas.UserUpdate, db: AsyncSessio
 
 
 # 📌 Удалить пользователя
-@router.delete("/{user_id}", tags=["Users"])
+@router.delete("/{user_id}")
 async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
     success = await services.delete_user(db, user_id)
     if not success:
@@ -54,7 +54,7 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
 
 
 # 📌 Логин
-@router.post("/login", response_model=schemas.Token, tags=["Auth"])
+@router.post("/login", response_model=schemas.Token)
 async def login_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
@@ -63,6 +63,6 @@ async def login_access_token(
 
 
 # 📌 Текущий пользователь
-@router.get("/me", response_model=schemas.UserBase, tags=["Auth"])
+@router.get("/me", response_model=schemas.UserBase)
 async def read_current_user(current_user: User = Depends(get_current_user)):
     return current_user

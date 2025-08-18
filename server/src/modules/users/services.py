@@ -1,10 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from src.config.settings import settings
+from src.common.security import get_password_hash
 from src.modules.users.models import User
 from src.modules.users.schemas import UserCreate, UserUpdate
-from src.common.security import get_password_hash
-from src.config.settings import settings
 
 
 # Получить одного юзера по ID

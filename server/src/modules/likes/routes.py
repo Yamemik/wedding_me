@@ -5,7 +5,7 @@ from src.common.dependencies import get_db
 from src.modules.likes import schemas, services
 
 
-router = APIRouter(prefix="/likes", tags=["Likes"])
+router = APIRouter()
 
 @router.post("/", response_model=schemas.LikeBase)
 async def create_like(like_in: schemas.LikeCreate, db: AsyncSession = Depends(get_db)):

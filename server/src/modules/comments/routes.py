@@ -5,7 +5,7 @@ from src.common.dependencies import get_db
 from src.modules.comments import schemas, services
 
 
-router = APIRouter(prefix="/comments", tags=["Comments"])
+router = APIRouter()
 
 @router.post("/", response_model=schemas.CommentBase)
 async def create_comment(comment_in: schemas.CommentCreate, db: AsyncSession = Depends(get_db)):
