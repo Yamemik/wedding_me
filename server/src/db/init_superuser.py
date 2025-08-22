@@ -15,7 +15,7 @@ async def create_superuser_if_not_exists(db: AsyncSession):
     if superuser is None:
         superuser = User(
             email=settings.SUPERUSER_EMAIL,
-            password=get_password_hash(settings.SUPERUSER_PASSWORD),
+            hashed_password=get_password_hash(settings.SUPERUSER_PASSWORD),
             surname="Admin",
             name="Admin",
             patr=None,

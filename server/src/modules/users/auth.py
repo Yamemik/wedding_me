@@ -17,13 +17,20 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
     payload = {"exp": expire, "sub": subject}
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
+
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
 ) -> Token:
-    user: User | None = await get_user_by_email(db, form_data.username)
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    user = await get_user_by_email(db, form_data.username)
 
-    access_token = create_access_token(subject=user.email)
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    access_token = create_access_token(subject=str(user.id))  # или user.email
     return Token(access_token=access_token)
+

@@ -54,7 +54,7 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
 
 
 # 📌 Логин
-@router.post("/login", response_model=schemas.Token)
+@router.post("/login", response_model=schemas.Token, tags=["Auth"])
 async def login_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
