@@ -16,12 +16,12 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr]
-    surname: Optional[str]
-    name: Optional[str]
-    patr: Optional[str]
-    password: Optional[str]
-    is_admin: Optional[bool]
+    email: Optional[EmailStr] = None
+    surname: Optional[str] = None
+    name: Optional[str] = None
+    patr: Optional[str] = None
+    password: Optional[str] = None
+    is_admin: Optional[bool] = None
 
 
 class UserOut(UserBase):

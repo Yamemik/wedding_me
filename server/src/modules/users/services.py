@@ -50,8 +50,9 @@ async def update_user(db: AsyncSession, user_id: int, user_data: UserUpdate) -> 
 
     update_data = user_data.dict(exclude_unset=True)
 
-    if "hashed_password" in update_data:
-        update_data["hashed_password"] = get_password_hash(update_data["hashed_password"])
+    # Обработка пароля
+    if "password" in update_data and update_data["password"]:
+        update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
 
     for key, value in update_data.items():
         setattr(db_user, key, value)
