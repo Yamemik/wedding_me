@@ -12,7 +12,7 @@ from src.modules.payments.routes import router as payments_router
 api_router = APIRouter()
 
 # подключаем роутеры
-api_router.include_router(users_router, prefix="/users", tags=["Users"])
+api_router.include_router(users_router)
 api_router.include_router(albums_router, prefix="/albums", tags=["Albums"])
 api_router.include_router(photos_router, prefix="/photos", tags=["Photos"])
 api_router.include_router(comments_router, prefix="/comments", tags=["Comments"])

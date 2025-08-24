@@ -9,8 +9,7 @@ from src.modules.users.dependencies import get_current_user
 from src.modules.users.models import User
 
 
-router = APIRouter()
-
+router = APIRouter(prefix="/users", tags=["Users"])
 
 # 📌 Создать нового пользователя
 @router.post(
