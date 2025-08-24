@@ -30,7 +30,7 @@ async def create_user(db: AsyncSession, user: UserCreate) -> User:
     hashed_password = get_password_hash(user.password)
     db_user = User(
         email=user.email,
-        password=hashed_password,
+        hashed_password=hashed_password,
         surname=user.surname,
         name=user.name,
         patr=user.patr,
@@ -50,8 +50,8 @@ async def update_user(db: AsyncSession, user_id: int, user_data: UserUpdate) -> 
 
     update_data = user_data.dict(exclude_unset=True)
 
-    if "password" in update_data:
-        update_data["password"] = get_password_hash(update_data["password"])
+    if "hashed_password" in update_data:
+        update_data["hashed_password"] = get_password_hash(update_data["hashed_password"])
 
     for key, value in update_data.items():
         setattr(db_user, key, value)
@@ -79,7 +79,7 @@ async def create_superuser_if_not_exists(db: AsyncSession):
     if superuser is None:
         superuser = User(
             email=settings.SUPERUSER_EMAIL,
-            password=get_password_hash(settings.SUPERUSER_PASSWORD),
+            hashed_password=get_password_hash(settings.SUPERUSER_PASSWORD),
             surname="Admin",
             name="Admin",
             is_admin=True,

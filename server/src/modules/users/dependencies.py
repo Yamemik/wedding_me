@@ -4,7 +4,7 @@ from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.settings import settings
-from src.modules.users.crud import get_user_by_email
+from src.modules.users.services import get_user
 from src.modules.users.models import User
 from src.common.dependencies import get_db
 
@@ -21,14 +21,15 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        user_id_str = payload.get("sub")
+        if user_id_str is None:
             raise credentials_exception
+        user_id = int(user_id_str)        
     except JWTError:
         raise credentials_exception
 
-    user = await get_user_by_email(db, email=email)
+    user = await get_user(db, user_id)
     if not user:
         raise credentials_exception
 
