@@ -105,14 +105,17 @@ class _LoginScreenState extends State<LoginScreen> {
 void _submitForm() async {
   if (_formKey.currentState!.validate()) {
     try {
-      final response = await AuthService.login(
+      final token = await AuthService.login(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
 
       if (kDebugMode) {
-        print('Успешный вход: ${response.data}');
+        print('Успешный вход: $token');
       }
+
+      if (!mounted) return;
+
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

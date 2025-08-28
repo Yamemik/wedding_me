@@ -3,7 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthService {
   static final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'https://your-backend.com/api',
+    baseUrl: 'http://10.0.2.2:8000/api/v1/users',
     connectTimeout: Duration(seconds: 10),
     receiveTimeout: Duration(seconds: 10),
     headers: {'Content-Type': 'application/json'},
@@ -19,9 +19,9 @@ class AuthService {
     }
   }
 
-  static Future<void> login(String email, String password) async {
+  static Future<String> login(String email, String password) async {
     try {
-      final response = await _dio.post('/login', data: {
+      final response = await _dio.post('/', data: {
         'email': email,
         'password': password,
       });
@@ -29,6 +29,8 @@ class AuthService {
       final token = response.data['access_token'];
       await _storage.write(key: 'access_token', value: token);
       _dio.options.headers['Authorization'] = 'Bearer $token';
+      
+      return token;
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Ошибка входа');
     }
