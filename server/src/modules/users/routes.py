@@ -7,13 +7,15 @@ from src.common.dependencies import get_db
 from src.modules.users import schemas, services, auth
 from src.modules.users.dependencies import get_current_user
 from src.modules.users.models import User
+from fastapi.security import OAuth2PasswordRequestForm
+from src.modules.users.auth import create_access_token
 
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 # 📌 Создать нового пользователя
 @router.post(
-    "/", 
+    "/register", 
     response_model=schemas.UserOut,
     status_code=status.HTTP_201_CREATED,
     summary="Create new user",
@@ -26,7 +28,15 @@ async def create_user(user_in: schemas.UserCreate, db: AsyncSession = Depends(ge
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
-    return await services.create_user(db, user_in)
+    user = await services.create_user(db, user_in)
+    access_token = create_access_token(subject=str(user.id))
+    
+    return {
+        "id": user.id,
+        "email": user.email,
+        "created_at": user.created_at,
+        "access_token": access_token
+    }
 
 
 # 📌 Получить список пользователей
@@ -64,7 +74,7 @@ async def read_user(user_id: int, db: AsyncSession = Depends(get_db)):
 # 📌 Текущий пользователь (ДОБАВЛЕНО)
 @router.get(
     "/me/", 
-    response_model=schemas.UserOut,
+    response_model=schemas.UserOutWithoutToken,
     summary="Get current user",
     description="Retrieve authenticated user's profile"
 )

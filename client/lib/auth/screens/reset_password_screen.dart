@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../widgets/auth_header.dart';
 import '../widgets/auth_form_field.dart';
 import '../widgets/auth_alternative_action.dart';
 import '../models/auth_model.dart';
-
+import '../services/auth_service.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -16,6 +17,7 @@ class ResetPasswordScreen extends StatefulWidget {
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +29,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           child: Column(
             children: [
               const AuthHeader(title: 'Восстановление пароля'),
-
               const SizedBox(height: 16),
 
               AuthFormField(
@@ -35,23 +36,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Введите email';
-                  }
+                  if (value == null || value.isEmpty) return 'Введите email';
                   final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-                  if (!emailRegex.hasMatch(value)) {
-                    return 'Введите корректный email';
-                  }
+                  if (!emailRegex.hasMatch(value)) return 'Введите корректный email';
                   return null;
                 },
               ),
-
               const SizedBox(height: 24),
 
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submitForm,
+                  onPressed: _isLoading ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: Colors.pink,
@@ -59,10 +55,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text('СБРОСИТЬ ПАРОЛЬ'),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('СБРОСИТЬ ПАРОЛЬ'),
                 ),
               ),
-
               const SizedBox(height: 20),
 
               AuthAlternativeAction(
@@ -79,15 +83,41 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     );
   }
 
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      final resetData = ResetPasswordData(
-        email: _emailController.text.trim(),
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final resetData = ResetPasswordData(email: _emailController.text.trim());
+
+    try {
+      await AuthService.resetPassword(resetData);
+
+      if (kDebugMode) {
+        print('Запрос на сброс пароля: ${resetData.email}');
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ссылка для сброса пароля отправлена на почту')),
       );
 
-      // TODO: Добавь вызов API или Firebase reset password
-      print('Запрос на восстановление пароля: ${resetData.email}');
-      Navigator.pop(context); // Вернуться назад
+      Navigator.pop(context); // Вернуться назад после успешного запроса
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

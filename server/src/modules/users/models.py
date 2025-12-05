@@ -11,8 +11,8 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     email = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
-    surname = Column(String, nullable=False)
-    name = Column(String, nullable=False)
+    surname = Column(String, nullable=True)
+    name = Column(String, nullable=True)
     patr = Column(String, nullable=True)
     is_admin = Column(Boolean, default=False)
 

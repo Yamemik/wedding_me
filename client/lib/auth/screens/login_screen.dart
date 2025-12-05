@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/auth_form_field.dart';
 import '../widgets/auth_alternative_action.dart';
+import '../models/auth_model.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Введите email';
-                  }
+                  if (value == null || value.isEmpty) return 'Введите email';
                   if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                     return 'Введите корректный email';
                   }
@@ -50,12 +50,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _passwordController,
                 obscureText: true,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Введите пароль';
-                  }
-                  if (value.length < 6) {
-                    return 'Пароль должен содержать минимум 6 символов';
-                  }
+                  if (value == null || value.isEmpty) return 'Введите пароль';
+                  if (value.length < 6) return 'Пароль должен содержать минимум 6 символов';
                   return null;
                 },
               ),
@@ -75,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submitForm,
+                  onPressed: _isLoading ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: Colors.pink,
@@ -83,7 +79,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text('Войти'),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Войти'),
                 ),
               ),
 
@@ -103,13 +108,20 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-void _submitForm() async {
-  if (_formKey.currentState!.validate()) {
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final token = await AuthService.login(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
+      final loginData = LoginData(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
+
+      final token = await AuthService.login(loginData);
 
       if (kDebugMode) {
         print('Успешный вход: $token');
@@ -119,12 +131,19 @@ void _submitForm() async {
 
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
-}
 
   @override
   void dispose() {
