@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi.staticfiles import StaticFiles
 
 from src.config.settings import settings
 from src.api.router import api_router
@@ -27,6 +28,8 @@ app = FastAPI(
     title=f"{settings.APP_NAME} API docs",
     lifespan=lifespan
 )
+
+app.mount("/media", StaticFiles(directory="media"), name="media")
     
 app.add_middleware(
     CORSMiddleware,

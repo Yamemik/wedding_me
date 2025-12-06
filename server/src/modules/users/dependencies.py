@@ -10,7 +10,7 @@ from src.modules.users.models import User
 from src.common.dependencies import get_db
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/login")
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),

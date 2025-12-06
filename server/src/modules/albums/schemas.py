@@ -22,7 +22,6 @@ class AlbumUpdate(BaseModel):
 class AlbumRead(AlbumBase):
     id: int
     user_id: int
-    created_at: datetime
     photos: List[PhotoRead] = []
 
     model_config = ConfigDict(from_attributes=True)

@@ -4,6 +4,7 @@ import '../../users/models/user.dart';
 import '../models/auth_model.dart';
 import 'package:flutter/foundation.dart';
 
+
 class AuthService {
   static final Dio _dio = Dio(
     BaseOptions(
@@ -18,35 +19,51 @@ class AuthService {
 
   static User? currentUser;
 
-  /// Инициализация токена при старте приложения
+  // Инициализация токена при старте приложения
   static Future<void> init() async {
     final token = await _storage.read(key: 'access_token');
     if (token != null) {
       _dio.options.headers['Authorization'] = 'Bearer $token';
-      await getCurrentUser();
+      try {
+        await getCurrentUser();
+        if (currentUser == null) {
+          // Токен недействителен, удаляем его
+          await clearToken();
+        }
+      } catch (_) {
+        await clearToken();
+      }
     }
   }
 
-  /// Получить токен для ApiService
+  // Получить токен для ApiService
   static Future<String?> getToken() async {
     return await _storage.read(key: 'access_token');
   }
 
-  /// Логин
+  // Логин
   static Future<User> login(LoginData data) async {
     try {
-      final response = await _dio.post('/login', data: data.toJson());
+      final response = await _dio.post(
+        '/login',
+        data: {
+          'username': data.email, // email пользователя
+          'password': data.password,
+        },
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
+      );
 
       final map = response.data as Map<String, dynamic>;
       final token = map['access_token'];
       if (token == null) throw Exception("Сервер не вернул токен!");
 
-      // сохраняем токен
       await _storage.write(key: 'access_token', value: token);
       _dio.options.headers['Authorization'] = 'Bearer $token';
 
-      // получаем текущего пользователя
       await getCurrentUser();
+
       if (currentUser == null) {
         throw Exception("Не удалось получить данные пользователя");
       }
@@ -57,20 +74,25 @@ class AuthService {
     }
   }
 
-  /// Регистрация
+  // Регистрация
   static Future<User> register(RegisterData data) async {
     try {
       final response = await _dio.post('/register', data: data.toJson());
 
-      final map = response.data as Map<String, dynamic>;
+      final map = Map<String, dynamic>.from(response.data);
+
       final token = map['access_token'];
       if (token == null) throw Exception("Сервер не вернул токен!");
+
+      debugPrint("TOKEN FROM REGISTER => $token");
 
       await _storage.write(key: 'access_token', value: token);
       _dio.options.headers['Authorization'] = 'Bearer $token';
 
       await getCurrentUser();
+
       if (currentUser == null) {
+        debugPrint("ERROR: currentUser всё ещё null!");
         throw Exception("Не удалось получить данные пользователя");
       }
 
@@ -80,7 +102,7 @@ class AuthService {
     }
   }
 
-  /// Сброс пароля
+  // Сброс пароля
   static Future<void> resetPassword(ResetPasswordData data) async {
     try {
       await _dio.post('/reset-password', data: data.toJson());
@@ -103,19 +125,34 @@ class AuthService {
   }
 
   /// Получение текущего пользователя
-
   static Future<void> getCurrentUser() async {
     try {
+      debugPrint("REQUESTING /me with headers => ${_dio.options.headers}");
+
       final response = await _dio.get('/me');
 
-      debugPrint("ME RAW => ${response.data}");
+      debugPrint("RAW /me => ${response.data}");
+
+      if (response.data == null) {
+        debugPrint("ME RETURNED NULL");
+        currentUser = null;
+        return;
+      }
 
       final map = Map<String, dynamic>.from(response.data);
 
       currentUser = User.fromJson(map);
+      debugPrint("PARSED USER => $currentUser");
     } catch (e) {
       debugPrint("PARSE ERROR => $e");
       currentUser = null;
     }
+  }
+
+  /// Очистить токен
+  static Future<void> clearToken() async {
+    await _storage.delete(key: 'access_token');
+    _dio.options.headers.remove('Authorization');
+    currentUser = null;
   }
 }

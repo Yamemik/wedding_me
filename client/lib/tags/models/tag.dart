@@ -12,8 +12,8 @@ class Tag {
   factory Tag.fromJson(Map<String, dynamic> json) {
     return Tag(
       id: json['id'],
-      name: json['name'],
-      color: json['color'] ?? '#4CAF50',
+      name: json['name'] ?? '',
+      color: json['color'] ?? '',
     );
   }
 

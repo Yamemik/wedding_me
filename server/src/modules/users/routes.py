@@ -55,25 +55,25 @@ async def read_users(
 
 
 # 📌 Получить пользователя по ID
-@router.get(
-    "/{user_id}", 
-    response_model=schemas.UserOut,
-    summary="Get user by ID",
-    description="Retrieve specific user by their ID"
-)
-async def read_user(user_id: int, db: AsyncSession = Depends(get_db)):
-    db_user = await services.get_user(db, user_id)
-    if not db_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="User not found"
-        )
-    return db_user
+# @router.get(
+#     "/{user_id}", 
+#     response_model=schemas.UserOut,
+#     summary="Get user by ID",
+#     description="Retrieve specific user by their ID"
+# )
+# async def read_user(user_id: int, db: AsyncSession = Depends(get_db)):
+#     db_user = await services.get_user(db, user_id)
+#     if not db_user:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND, 
+#             detail="User not found"
+#         )
+#     return db_user
 
 
-# 📌 Текущий пользователь (ДОБАВЛЕНО)
+# 📌 Текущий пользователь
 @router.get(
-    "/me/", 
+    "/me", 
     response_model=schemas.UserOutWithoutToken,
     summary="Get current user",
     description="Retrieve authenticated user's profile"
@@ -86,7 +86,7 @@ async def read_current_user(
 
 # 📌 Обновить текущего пользователя (ДОБАВЛЕНО)
 @router.put(
-    "/me/", 
+    "/me", 
     response_model=schemas.UserOut,
     summary="Update current user",
     description="Update authenticated user's profile"

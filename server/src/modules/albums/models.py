@@ -13,4 +13,4 @@ class Album(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     owner = relationship("User", back_populates="albums")
     
-    photos = relationship("Photo", back_populates="album", cascade="all, delete")
+    photos = relationship("Photo", back_populates="album", cascade="all, delete", lazy="selectin")

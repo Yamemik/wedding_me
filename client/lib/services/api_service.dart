@@ -1,154 +1,143 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import '../auth/services/auth_service.dart';
 import '../albums/models/album.dart';
-import '../models/photo.dart';
-import '../models/comment.dart';
-import '../models/like.dart';
-import '../models/tag.dart';
+import '../photos/models/photo.dart';
+import '../comments/models/comment.dart';
+import '../likes/models/like.dart';
+import '../tags/models/tag.dart';
 import '../users/models/user.dart';
 
-class ApiService {
+
+class ApiService extends ChangeNotifier {
   static const String baseUrl = 'http://10.0.2.2:8000/api/v1';
+  final Dio _dio;
 
   User? _currentUser;
   User? get currentUser => _currentUser;
 
-  /// Асинхронное получение заголовков с токеном
-  Future<Map<String, String>> _getHeaders() async {
-    final token = await AuthService.getToken();
-    final headers = {'Content-Type': 'application/json'};
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
+  String? _token;
+  String? get token => _token;
+
+  ApiService(this._dio) {
+    _dio.options.baseUrl = baseUrl;
+    _dio.options.connectTimeout = const Duration(seconds: 15);
+    _dio.options.receiveTimeout = const Duration(seconds: 15);
+    _dio.options.headers['Content-Type'] = 'application/json';
+    _init();
+  }
+
+  Future<void> _init() async {
+    _token = await AuthService.getToken();
+    if (_token != null) {
+      _dio.options.headers['Authorization'] = 'Bearer $_token';
+      await getCurrentUser();
     }
+  }
+
+  Map<String, String> _defaultHeaders() {
+    final headers = {'Content-Type': 'application/json'};
+    if (_token != null) headers['Authorization'] = 'Bearer $_token';
     return headers;
   }
 
-  // ================= ALBUMS =================
-  Future<List<Album>> getAlbums({int? userId, bool? isPublic}) async {
-    final Map<String, String> queryParams = {};
-    if (userId != null) queryParams['user_id'] = userId.toString();
-    if (isPublic != null) queryParams['visible'] = isPublic.toString();
-
-    final url = Uri.parse('$baseUrl/albums').replace(queryParameters: queryParams);
-    final response = await http.get(url, headers: await _getHeaders());
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body) as List;
-      return data.map((json) => Album.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load albums');
+  /// ================= USER =================
+  Future<User?> getCurrentUser() async {
+    try {
+      final response = await _dio.get('/me', options: Options(headers: _defaultHeaders()));
+      _currentUser = User.fromJson(response.data);
+      notifyListeners();
+      return _currentUser;
+    } on DioException catch (e) {
+      debugPrint('Failed to fetch current user: ${e.response?.data}');
+      _currentUser = null;
+      notifyListeners();
+      return null;
     }
+  }
+
+  /// ================= ALBUMS =================
+  Future<List<Album>> getAlbums({int? userId, bool? isPublic}) async {
+    final queryParams = <String, dynamic>{};
+    if (userId != null) queryParams['user_id'] = userId;
+    if (isPublic != null) queryParams['visible'] = isPublic;
+
+    final response = await _dio.get('/albums', queryParameters: queryParams, options: Options(headers: _defaultHeaders()));
+    final data = response.data;
+    if (data is List) {
+      return data.map((json) => Album.fromJson(json)).toList();
+    }
+    return [];
   }
 
   Future<Album> createAlbum(Album album) async {
-    final url = Uri.parse('$baseUrl/albums');
-    final response = await http.post(
-      url,
-      headers: await _getHeaders(),
-      body: json.encode(album.toJson()),
+    final response = await _dio.post('/albums/', data: album.toJson(), options: Options(headers: _defaultHeaders()));
+    return Album.fromJson(response.data);
+  }
+
+  Future<void> uploadAlbumFiles(int albumId, FormData formData, {Function(int, int)? onSendProgress}) async {
+    await _dio.post(
+      '/albums/$albumId/files/',
+      data: formData,
+      options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+      onSendProgress: onSendProgress,
     );
-    if (response.statusCode == 201) {
-      return Album.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to create album');
-    }
   }
 
-  // ================= PHOTOS =================
+  /// ================= PHOTOS =================
   Future<List<Photo>> getAlbumPhotos(int albumId) async {
-    final url = Uri.parse('$baseUrl/albums/$albumId/photos');
-    final response = await http.get(url, headers: await _getHeaders());
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body) as List;
-      return data.map((json) => Photo.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load photos');
-    }
+    final response = await _dio.get('/albums/$albumId/photos', options: Options(headers: _defaultHeaders()));
+    final data = response.data;
+    if (data is List) return data.map((json) => Photo.fromJson(json)).toList();
+    return [];
   }
 
-  Future<Photo> uploadPhoto(int albumId, String filePath) async {
-    final url = Uri.parse('$baseUrl/albums/$albumId/photos');
-    final request = http.MultipartRequest('POST', url);
-    request.files.add(await http.MultipartFile.fromPath('file', filePath));
-    request.headers.addAll(await _getHeaders());
-
-    final response = await request.send();
-    final responseData = await response.stream.bytesToString();
-
-    if (response.statusCode == 201) {
-      return Photo.fromJson(json.decode(responseData));
-    } else {
-      throw Exception('Failed to upload photo');
-    }
+  Future<Photo> uploadPhoto(int albumId, FormData formData) async {
+    final response = await _dio.post('/albums/$albumId/photos', data: formData, options: Options(headers: {'Content-Type': 'multipart/form-data'}));
+    return Photo.fromJson(response.data);
   }
 
-  // ================= COMMENTS =================
+  /// ================= COMMENTS =================
   Future<List<Comment>> getPhotoComments(int photoId) async {
-    final url = Uri.parse('$baseUrl/photos/$photoId/comments');
-    final response = await http.get(url, headers: await _getHeaders());
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body) as List;
-      return data.map((json) => Comment.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load comments');
-    }
+    final response = await _dio.get('/photos/$photoId/comments', options: Options(headers: _defaultHeaders()));
+    final data = response.data;
+    if (data is List) return data.map((json) => Comment.fromJson(json)).toList();
+    return [];
   }
 
   Future<Comment> addComment(int photoId, String text) async {
-    final url = Uri.parse('$baseUrl/photos/$photoId/comments');
-    final response = await http.post(
-      url,
-      headers: await _getHeaders(),
-      body: json.encode({'text': text}),
-    );
-    if (response.statusCode == 201) {
-      return Comment.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to add comment');
-    }
+    final response = await _dio.post('/photos/$photoId/comments', data: {'text': text}, options: Options(headers: _defaultHeaders()));
+    return Comment.fromJson(response.data);
   }
 
-  // ================= LIKES =================
+  /// ================= LIKES =================
   Future<Like> likePhoto(int photoId) async {
-    final url = Uri.parse('$baseUrl/photos/$photoId/like');
-    final response = await http.post(url, headers: await _getHeaders());
-
-    if (response.statusCode == 201) {
-      return Like.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to like photo');
-    }
+    final response = await _dio.post('/photos/$photoId/like', options: Options(headers: _defaultHeaders()));
+    return Like.fromJson(response.data);
   }
 
   Future<void> unlikePhoto(int photoId) async {
-    final url = Uri.parse('$baseUrl/photos/$photoId/like');
-    final response = await http.delete(url, headers: await _getHeaders());
-    if (response.statusCode != 204) {
-      throw Exception('Failed to unlike photo');
-    }
+    await _dio.delete('/photos/$photoId/like', options: Options(headers: _defaultHeaders()));
   }
 
-  // ================= TAGS =================
+  /// ================= TAGS =================
   Future<List<Tag>> getTags() async {
-    final url = Uri.parse('$baseUrl/tags');
-    final response = await http.get(url, headers: await _getHeaders());
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body) as List;
-      return data.map((json) => Tag.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load tags');
-    }
+    final response = await _dio.get('/tags', options: Options(headers: _defaultHeaders()));
+    final data = response.data;
+    if (data is List) return data.map((json) => Tag.fromJson(json)).toList();
+    return [];
   }
 
   Future<void> addTagToPhoto(int photoId, int tagId) async {
-    final url = Uri.parse('$baseUrl/photos/$photoId/tags/$tagId');
-    final response = await http.post(url, headers: await _getHeaders());
-    if (response.statusCode != 201) {
-      throw Exception('Failed to add tag');
-    }
+    await _dio.post('/photos/$photoId/tags/$tagId', options: Options(headers: _defaultHeaders()));
+  }
+
+  /// ================= LOGOUT =================
+  Future<void> logout() async {
+    _currentUser = null;
+    _token = null;
+    await AuthService.clearToken();
+    _dio.options.headers.remove('Authorization');
+    notifyListeners();
   }
 }
