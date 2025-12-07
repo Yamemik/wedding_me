@@ -22,5 +22,7 @@ class Settings(BaseSettings):
     
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     
+    MEDIA_DIR: str = "media/photos"
+    
 
 settings = Settings()

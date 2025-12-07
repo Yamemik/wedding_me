@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi import UploadFile, File, HTTPException
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from anyio import open_file
 
 from src.common.dependencies import get_db
 from src.modules.photos import schemas, services
@@ -52,15 +53,15 @@ async def upload_photo(
     os.makedirs(MEDIA_ROOT, exist_ok=True)
 
     content = await file.read()
-    async with await anyio.open_file(save_path, "wb") as f:
+    async with await open_file(save_path, "wb") as f:
         await f.write(content)
 
     url = f"/media/photos/{filename}"
 
     # новая запись
-    photo_in = PhotoCreate(
+    photo_in = schemas.PhotoCreate(
         filename=filename,
-        url=url,
+        path=url,
         album_id=album_id    
     )
 
