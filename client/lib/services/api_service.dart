@@ -90,6 +90,11 @@ class ApiService extends ChangeNotifier {
     return Album.fromJson(response.data);
   }
 
+  Future<Album> getAlbum(int albumId) async {
+    final response = await _dio.get('/albums/$albumId');
+    return Album.fromJson(response.data);
+  }
+
   Future<void> uploadAlbumFiles(
     int albumId,
     FormData formData, {

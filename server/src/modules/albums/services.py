@@ -53,15 +53,18 @@ async def upload_files_to_album(db: AsyncSession, album_id: int, files: List[Upl
 
         # сохранение файла
         try:
+            # with open(filepath, "wb") as buffer:
+            #     buffer.write(await file.read())
+            data = await file.read()
             with open(filepath, "wb") as buffer:
-                buffer.write(await file.read())
+                buffer.write(data)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Ошибка сохранения файла: {e}")
 
         # запись в БД
         photo = Photo(
             album_id=album_id,
-            file_path=f"/media/photos/{filename}"
+            path=f"/media/photos/{filename}"
         )
 
         db.add(photo)

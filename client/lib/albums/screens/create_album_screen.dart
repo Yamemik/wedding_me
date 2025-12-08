@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
+
 import '../../services/api_service.dart';
 import '../../auth/services/auth_service.dart';
 import '../models/album.dart';
@@ -20,7 +20,7 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  final List<File> _selectedFiles = [];
+  final List<XFile> _selectedFiles = [];
   bool _isPublic = true;
   bool _isLoading = false;
   double _uploadProgress = 0.0;
@@ -86,7 +86,7 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
                                 color: Colors.grey.shade300,
                                 child: Center(
                                   child: Text(
-                                    _selectedFiles[i].path.split('/').last,
+                                    _selectedFiles[i].name,
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(fontSize: 10),
                                   ),
@@ -96,8 +96,7 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
                                 top: 0,
                                 right: 0,
                                 child: GestureDetector(
-                                  onTap: () =>
-                                      setState(() => _selectedFiles.removeAt(i)),
+                                  onTap: () => setState(() => _selectedFiles.removeAt(i)),
                                   child: const Icon(
                                     Icons.close,
                                     color: Colors.red,
@@ -133,7 +132,7 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(8),
-      color: color.withValues(alpha: 0.1),
+      color: color.withOpacity(0.1),
       child: Row(
         children: [
           Icon(icon, color: color),
@@ -157,11 +156,24 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
     try {
       final images = await _picker.pickMultiImage(imageQuality: 85);
       setState(() {
-        _selectedFiles.addAll(images.map((x) => File(x.path)));
+        _selectedFiles.addAll(images);
       });
-    } catch (e) {
+        } catch (e) {
       setState(() => _errorMessage = 'Ошибка выбора файлов: $e');
     }
+  }
+
+  Future<FormData> _buildFormData(List<XFile> files) async {
+    final formData = FormData();
+    for (final file in files) {
+      formData.files.add(
+        MapEntry(
+          'files',
+          await MultipartFile.fromFile(file.path, filename: file.name),
+        ),
+      );
+    }
+    return formData;
   }
 
   Future<void> _createAlbum() async {
@@ -190,34 +202,39 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
         title: _titleController.text,
         visible: _isPublic,
         userId: user.id,
+        photos: [], // ← обязательно для новой модели
       );
 
       final apiService = Provider.of<ApiService>(context, listen: false);
 
+      // Создание альбома
       final createdAlbum = await apiService.createAlbum(album);
 
-      FormData formData = FormData();
-      for (var file in _selectedFiles) {
-        formData.files.add(
-          MapEntry(
-            'files',
-            await MultipartFile.fromFile(
-              file.path,
-              filename: file.path.split('/').last,
-            ),
-          ),
-        );
-      }
+      // Формируем FormData для загрузки фото
+      final formData = await _buildFormData(_selectedFiles);
 
-      await apiService.uploadAlbumFiles(createdAlbum.id, formData);
+      // Загружаем фото в альбом
+      await apiService.uploadAlbumFiles(
+        createdAlbum.id,
+        formData,
+        onSendProgress: (sent, total) {
+          setState(() {
+            _uploadProgress = sent / total;
+          });
+        },
+      );
+
+      // Получаем обновленный альбом с фото
+      final updatedAlbum = await apiService.getAlbum(createdAlbum.id);
 
       setState(() {
-        _successMessage = 'Альбом "${createdAlbum.title}" успешно создан!';
+        _successMessage = 'Альбом "${updatedAlbum.title}" успешно создан!';
         _isLoading = false;
       });
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/album/${createdAlbum.id}');
+        Navigator.pushReplacementNamed(
+            context, '/album/${updatedAlbum.id}');
       }
     } catch (e) {
       setState(() {

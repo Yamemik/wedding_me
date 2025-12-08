@@ -10,24 +10,19 @@ import 'auth/services/auth_service.dart';
 import 'home/screens/home_screen.dart';
 import 'onboarding/screens/onboarding_screen.dart';
 import 'albums/screens/create_album_screen.dart';
+import 'albums/screens/album_detail_screen.dart'; // <-- добавь
 
 import 'services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Инициализация токена и загрузка текущего пользователя
   await AuthService.init();
 
   final sharedPrefs = await SharedPreferences.getInstance();
-
-  // Показывать онбординг только при первом запуске
   final bool showOnboarding = sharedPrefs.getBool('first_run') ?? true;
-
-  // Проверка авторизации
   final bool isLoggedIn = await AuthService.isLoggedIn();
 
-  // Создаем Dio
   final dio = Dio(
     BaseOptions(
       baseUrl: 'http://10.0.2.2:8000/api/v1',
@@ -39,7 +34,6 @@ void main() async {
     ),
   );
 
-  // Если токен есть – прикрепляем
   final token = await AuthService.getToken();
   if (token != null) {
     dio.options.headers['Authorization'] = 'Bearer $token';
@@ -48,7 +42,6 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        // Используем ChangeNotifierProvider вместо обычного Provider
         ChangeNotifierProvider<ApiService>(
           create: (_) => ApiService(dio),
         ),
@@ -77,7 +70,6 @@ class MyApp extends StatelessWidget {
       title: 'WeddingMe',
       debugShowCheckedModeBanner: false,
 
-      // Логика выбора стартового экрана
       initialRoute: showOnboarding
           ? '/onboarding'
           : isLoggedIn
@@ -91,6 +83,27 @@ class MyApp extends StatelessWidget {
         '/reset-password': (_) => const ResetPasswordScreen(),
         '/home': (_) => const HomeScreen(),
         '/create-album': (_) => const CreateAlbumScreen(),
+      },
+
+      // 🔥 ВАЖНО: обработка динамических URL
+      onGenerateRoute: (settings) {
+        final uri = Uri.parse(settings.name!);
+
+        // match: /album/6
+        if (uri.pathSegments.length == 2 &&
+            uri.pathSegments.first == 'album') {
+          final id = int.parse(uri.pathSegments[1]);
+
+          return MaterialPageRoute(
+            builder: (_) => AlbumDetailScreen(albumId: id),
+          );
+        }
+
+        return MaterialPageRoute(
+          builder: (_) => const Scaffold(
+            body: Center(child: Text('Page not found')),
+          ),
+        );
       },
     );
   }

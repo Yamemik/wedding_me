@@ -1,12 +1,14 @@
 import 'package:wedding_me/users/models/user.dart';
 
+import '../../photos/models/photo.dart';
+
+
 class Album {
   final int id;
   final String title;
   final bool visible;
   final int userId;
-  final int photoCount;
-  final int videoCount;
+  final List<Photo> photos;
   final User? user;
 
   Album({
@@ -14,8 +16,7 @@ class Album {
     required this.title,
     required this.visible,
     required this.userId,
-    this.photoCount = 0,
-    this.videoCount = 0,
+    this.photos = const [],
     this.user,
   });
 
@@ -26,6 +27,14 @@ class Album {
       visible: json['visible'] ?? true,
       userId: json['user_id'],
       user: json['user'] != null ? User.fromJson(json['user']) : null,
+
+      /// ВАЖНО:
+      /// Photo.fromJson НЕ должен тянуть Album обратно, иначе рекурсия.
+      photos: json['photos'] != null
+          ? (json['photos'] as List)
+              .map((p) => Photo.fromJson(p))
+              .toList()
+          : [],
     );
   }
 
