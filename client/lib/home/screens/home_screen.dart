@@ -1,12 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../widgets/popular_stories_section.dart';
-import '../widgets/album_grid_section.dart';
 import '../widgets/search_section.dart';
 import '../widgets/bottom_nav_bar.dart';
 
+import '../../services/api_service.dart';
+import '../../albums/models/album.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool loading = true;
+  List<Album> myAlbums = [];
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    loadAlbums();
+  }
+
+  Future<void> loadAlbums() async {
+    try {
+      final api = context.read<ApiService>();
+      final albums = await api.getMyAlbums();
+
+      setState(() {
+        myAlbums = albums;
+        loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        error = "Ошибка загрузки альбомов: $e";
+        loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,43 +50,33 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Аппбар с заголовком
             _buildAppBar(context),
-            
-            // Основной контент
+
             Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Поиск
-                    const SearchSection(),
-                    
-                    // Популярные истории
-                    const PopularStoriesSection(),
-                    
-                    // Мои альбомы
-                    AlbumGridSection(
-                      title: 'Мои альбомы',
-                      albums: const [
-                        'Альбом №1',
-                        'Альбом №2',
-                        'Альбом №3',
-                        'Альбом №4',
-                      ],
-                    ),
-                    
-                    // Общие альбомы
-                    _buildSharedAlbumsSection(context),
-                  ],
+              child: RefreshIndicator(
+                onRefresh: loadAlbums,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SearchSection(),
+                      const PopularStoriesSection(),
+
+                      // Мои альбомы
+                      _buildMyAlbumsSection(),
+
+                      // общие альбомы
+                      _buildSharedAlbumsSection(context),
+                    ],
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
-      
-      // Плавающая кнопка создания альбома
+
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.pushNamed(context, '/create-album');
@@ -61,13 +86,12 @@ class HomeScreen extends StatelessWidget {
         elevation: 4,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      
-      // Нижняя навигационная панель
-      bottomNavigationBar: const CustomBottomNavBar(),
+
+      bottomNavigationBar: const CustomBottomNavBar(currentIndex: 0),
     );
   }
 
-  // Аппбар
+  // ---------------- APP BAR ----------------
   Widget _buildAppBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -84,7 +108,6 @@ class HomeScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Логотип или заголовок
           const Text(
             'WeddingMe',
             style: TextStyle(
@@ -93,20 +116,11 @@ class HomeScreen extends StatelessWidget {
               color: Colors.pink,
             ),
           ),
-          
-          // Иконки в правой части
           Row(
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications_none, size: 28),
                 onPressed: () {},
-                color: Colors.grey[700],
-              ),
-              IconButton(
-                icon: const Icon(Icons.person_outline, size: 28),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/profile');
-                },
                 color: Colors.grey[700],
               ),
             ],
@@ -116,8 +130,130 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Секция общих альбомов
+  // ------------------ МОИ АЛЬБОМЫ ------------------
+  Widget _buildMyAlbumsSection() {
+    if (loading) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (error != null) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(error!, style: const TextStyle(color: Colors.red)),
+      );
+    }
+
+    if (myAlbums.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          "У вас пока нет альбомов",
+          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Мои альбомы",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: myAlbums.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.9,
+            ),
+            itemBuilder: (_, i) {
+              final album = myAlbums[i];
+              final preview = album.photos.isNotEmpty
+                  ? "http://10.0.2.2:8000${album.photos.first.path}"
+                  : null;
+
+              return GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, "/album/${album.id}");
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: preview != null
+                            ? ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(12),
+                                ),
+                                child: Image.network(
+                                  preview,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : Container(
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(12),
+                                  ),
+                                ),
+                                child: const Icon(Icons.photo_album,
+                                    size: 40, color: Colors.grey),
+                              ),
+                      ),
+                      Padding(
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                        child: Text(
+                          album.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              );
+            },
+          )
+        ],
+      ),
+    );
+  }
+
+  // ------------------ ОБЩИЕ АЛЬБОМЫ ------------------
   Widget _buildSharedAlbumsSection(BuildContext context) {
+    final sharedAlbums = [
+      {'title': 'Свадьба Анны и Игоря', 'photos': 24, 'videos': 3},
+      {'title': 'Юбилей родителей', 'photos': 18, 'videos': 2},
+      {'title': 'Выпускной вечер', 'photos': 32, 'videos': 4},
+    ];
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -132,70 +268,25 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          ..._buildSharedAlbumList(context),
+          ...sharedAlbums.map((album) {
+            return Card(
+              elevation: 1,
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey[200]!, width: 1),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(16),
+                title: Text(album['title'] as String),
+                subtitle: Text(
+                    '${album['photos']} фото • ${album['videos']} видео'),
+                onTap: () {},
+              ),
+            );
+          })
         ],
       ),
     );
-  }
-
-  List<Widget> _buildSharedAlbumList(BuildContext context) {
-    final sharedAlbums = [
-      {'title': 'Свадьба Анны и Игоря', 'photos': 24, 'videos': 3},
-      {'title': 'Юбилей родителей', 'photos': 18, 'videos': 2},
-      {'title': 'Выпускной вечер', 'photos': 32, 'videos': 4},
-    ];
-
-    return sharedAlbums.map((album) {
-      return Card(
-        elevation: 1,
-        margin: const EdgeInsets.only(bottom: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: Colors.grey[200]!, width: 1),
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.all(16),
-          leading: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: Colors.pink[50],
-            ),
-            child: const Icon(Icons.photo_library, color: Colors.pink),
-          ),
-          title: Text(
-            album['title'] as String,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
-          ),
-          subtitle: Text(
-            '${album['photos']} фото • ${album['videos']} видео',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          trailing: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.pink[50],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.pink,
-            ),
-          ),
-          onTap: () {
-            Navigator.pushNamed(
-              context,
-              '/album/:id',
-              arguments: album['title'].toString().toLowerCase().replaceAll(' ', '_'),
-            );
-          },
-        ),
-      );
-    }).toList();
   }
 }

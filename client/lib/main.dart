@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 
+import 'albums/screens/all_albums_screen.dart';
 import 'auth/screens/login_screen.dart';
 import 'auth/screens/register_screen.dart';
 import 'auth/screens/reset_password_screen.dart';
@@ -10,7 +11,7 @@ import 'auth/services/auth_service.dart';
 import 'home/screens/home_screen.dart';
 import 'onboarding/screens/onboarding_screen.dart';
 import 'albums/screens/create_album_screen.dart';
-import 'albums/screens/album_detail_screen.dart'; // <-- добавь
+import 'albums/screens/album_detail_screen.dart';
 
 import 'services/api_service.dart';
 
@@ -83,6 +84,8 @@ class MyApp extends StatelessWidget {
         '/reset-password': (_) => const ResetPasswordScreen(),
         '/home': (_) => const HomeScreen(),
         '/create-album': (_) => const CreateAlbumScreen(),
+        '/albums': (_) => const AllAlbumsScreen(),
+
       },
 
       // 🔥 ВАЖНО: обработка динамических URL

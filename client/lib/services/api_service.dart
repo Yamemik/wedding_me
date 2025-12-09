@@ -61,14 +61,12 @@ class ApiService extends ChangeNotifier {
   }
 
   /// ================= ALBUMS =================
-  Future<List<Album>> getAlbums({int? userId, bool? isPublic}) async {
-    final queryParams = <String, dynamic>{};
-    if (userId != null) queryParams["user_id"] = userId;
-    if (isPublic != null) queryParams["visible"] = isPublic;
+  Future<List<Album>> getMyAlbums() async {
+    final user = AuthService.currentUser!;
+    final userId = user.id;
 
     final response = await _dio.get(
-      "/albums",
-      queryParameters: queryParams,
+      "/albums/user/$userId/albums",
       options: Options(headers: _defaultHeaders()),
     );
 

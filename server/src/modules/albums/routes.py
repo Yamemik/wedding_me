@@ -1,6 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.common.dependencies import get_db
 from src.modules.albums import schemas, services
 
@@ -14,7 +15,7 @@ async def create_album(album_in: schemas.AlbumCreate, db: AsyncSession = Depends
 
 @router.get("/", response_model=list[schemas.AlbumRead])
 async def read_albums(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
-    return await services.get_albums(db, skip, limit)
+    return await services.get_public_albums(db, skip, limit)
 
 
 @router.get("/{album_id}", response_model=schemas.AlbumRead)
@@ -22,9 +23,9 @@ async def read_album(album_id: int, db: AsyncSession = Depends(get_db)):
     return await services.get_album(db, album_id)
 
 
-@router.get("/user/{user_id}", response_model=schemas.AlbumRead)
-async def read_albums_by_user(album_id: int, db: AsyncSession = Depends(get_db)):
-    return await services.get_albums_by_user(db, album_id)
+@router.get("/user/{user_id}/albums", response_model=list[schemas.AlbumRead])
+async def read_albums_by_user(user_id: int, db: AsyncSession = Depends(get_db)):
+    return await services.get_albums_by_user(db, user_id)
 
 
 @router.put("/{album_id}", response_model=schemas.AlbumRead)

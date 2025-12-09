@@ -1,14 +1,31 @@
 import 'package:flutter/material.dart';
 
-class CustomBottomNavBar extends StatefulWidget {
-  const CustomBottomNavBar({super.key});
+class CustomBottomNavBar extends StatelessWidget {
+  final int currentIndex;
 
-  @override
-  State<CustomBottomNavBar> createState() => _CustomBottomNavBarState();
-}
+  const CustomBottomNavBar({
+    super.key,
+    required this.currentIndex,
+  });
 
-class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
-  int _selectedIndex = 0;
+  void _onItemTapped(BuildContext context, int index) {
+    if (index == currentIndex) return;
+
+    switch (index) {
+      case 0:
+        Navigator.pushNamed(context, '/');
+        break;
+      case 1:
+        Navigator.pushNamed(context, '/search');
+        break;
+      case 2:
+        Navigator.pushNamed(context, '/albums');
+        break;
+      case 3:
+        Navigator.pushNamed(context, '/profile');
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,43 +38,23 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildNavItem(Icons.home, 'Главная', 0),
-            _buildNavItem(Icons.search, 'Поиск', 1),
-            const SizedBox(width: 40), // Отступ для FAB
-            _buildNavItem(Icons.photo_album, 'Альбомы', 2),
-            _buildNavItem(Icons.person, 'Профиль', 3),
+            _buildNavItem(context, Icons.home, 'Главная', 0),
+            _buildNavItem(context, Icons.search, 'Поиск', 1),
+            const SizedBox(width: 40),
+            _buildNavItem(context, Icons.photo_album, 'Альбомы', 2),
+            _buildNavItem(context, Icons.person, 'Профиль', 3),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    final isSelected = _selectedIndex == index;
-    
+  Widget _buildNavItem(
+      BuildContext context, IconData icon, String label, int index) {
+    final isSelected = currentIndex == index;
+
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-        
-        // Навигация
-        switch (index) {
-          case 0:
-            // Уже на главной
-            break;
-          case 1:
-            // Фокус на поиске
-            break;
-          case 2:
-            // Прокрутка к альбомам
-            break;
-          case 3:
-            // Переход в профиль
-            Navigator.pushNamed(context, '/profile');
-            break;
-        }
-      },
+      onTap: () => _onItemTapped(context, index),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

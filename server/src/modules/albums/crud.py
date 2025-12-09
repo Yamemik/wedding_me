@@ -1,4 +1,5 @@
 from typing import List, Optional
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -12,14 +13,20 @@ async def select_album(db: AsyncSession, album_id: int) -> Optional[AlbumRead]:
 
 
 async def select_albums(db: AsyncSession, skip: int, limit: int) -> List[AlbumRead]:
-    result = await db.execute(select(Album).offset(skip).limit(limit))
+    result = await db.execute(select(Album).where(Album.visible == True).offset(skip).limit(limit))
     return result.scalars().all()
 
 
 async def select_albums_by_user(db: AsyncSession, user_id: int, skip: int = 0, limit: int = 100) -> List[AlbumRead]:
-    stmt = (select(Album).where(Album.user_id == user_id).offset(skip).limit(limit))
+    stmt = (
+        select(Album)
+        .where(Album.user_id == user_id)
+        .offset(skip).limit(limit)
+        .options(selectinload(Album.photos))
+        )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    albums = result.scalars().all()
+    return [AlbumRead.model_validate(album) for album in albums]
 
 
 async def add_album(db: AsyncSession, payload: AlbumCreate) -> AlbumRead:
