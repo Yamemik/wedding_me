@@ -8,6 +8,7 @@ import '../widgets/bottom_nav_bar.dart';
 import '../../services/api_service.dart';
 import '../../albums/models/album.dart';
 
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 

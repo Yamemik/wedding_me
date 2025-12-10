@@ -9,11 +9,13 @@ import 'auth/screens/register_screen.dart';
 import 'auth/screens/reset_password_screen.dart';
 import 'auth/services/auth_service.dart';
 import 'home/screens/home_screen.dart';
+import 'home/screens/profile_screen.dart';
 import 'onboarding/screens/onboarding_screen.dart';
 import 'albums/screens/create_album_screen.dart';
 import 'albums/screens/album_detail_screen.dart';
 
 import 'services/api_service.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,7 +87,7 @@ class MyApp extends StatelessWidget {
         '/home': (_) => const HomeScreen(),
         '/create-album': (_) => const CreateAlbumScreen(),
         '/albums': (_) => const AllAlbumsScreen(),
-
+        '/profile': (_) => const ProfileScreen(),
       },
 
       // 🔥 ВАЖНО: обработка динамических URL

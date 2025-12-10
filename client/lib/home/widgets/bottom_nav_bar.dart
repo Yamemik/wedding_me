@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+
 class CustomBottomNavBar extends StatelessWidget {
   final int currentIndex;
 
@@ -13,10 +14,10 @@ class CustomBottomNavBar extends StatelessWidget {
 
     switch (index) {
       case 0:
-        Navigator.pushNamed(context, '/');
+        Navigator.pushReplacementNamed(context, '/');
         break;
       case 1:
-        Navigator.pushNamed(context, '/search');
+        Navigator.pushReplacementNamed(context, '/search');
         break;
       case 2:
         Navigator.pushNamed(context, '/albums');
@@ -50,7 +51,11 @@ class CustomBottomNavBar extends StatelessWidget {
   }
 
   Widget _buildNavItem(
-      BuildContext context, IconData icon, String label, int index) {
+    BuildContext context,
+    IconData icon,
+    String label,
+    int index,
+  ) {
     final isSelected = currentIndex == index;
 
     return GestureDetector(
