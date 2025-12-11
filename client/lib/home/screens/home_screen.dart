@@ -8,7 +8,6 @@ import '../widgets/bottom_nav_bar.dart';
 import '../../services/api_service.dart';
 import '../../albums/models/album.dart';
 
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -30,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> loadAlbums() async {
     try {
       final api = context.read<ApiService>();
-      final albums = await api.getMyAlbums();
+      final albums = await api.getPublicAlbums();
 
       setState(() {
         myAlbums = albums;
@@ -52,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             _buildAppBar(context),
-
             Expanded(
               child: RefreshIndicator(
                 onRefresh: loadAlbums,
@@ -63,12 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       const SearchSection(),
                       const PopularStoriesSection(),
-
-                      // Мои альбомы
                       _buildMyAlbumsSection(),
-
-                      // общие альбомы
-                      _buildSharedAlbumsSection(context),
                     ],
                   ),
                 ),
@@ -78,13 +71,31 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/create-album');
-        },
-        child: const Icon(Icons.add, size: 30),
-        backgroundColor: Colors.pink,
-        elevation: 4,
+      // ------------------ декоративный элемент вместо FAB ------------------
+      floatingActionButton: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: Colors.pink,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.pink.withOpacity(0.4),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Center(
+          child: Text(
+            'W',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+            ),
+          ),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
@@ -131,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ------------------ МОИ АЛЬБОМЫ ------------------
+  // ------------------ АЛЬБОМЫ ------------------
   Widget _buildMyAlbumsSection() {
     if (loading) {
       return const Padding(
@@ -151,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Text(
-          "У вас пока нет альбомов",
+          "Нет альбомов",
           style: TextStyle(fontSize: 16, color: Colors.grey[600]),
         ),
       );
@@ -163,15 +174,10 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Мои альбомы",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            "Альбомы",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-
           const SizedBox(height: 12),
-
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -219,13 +225,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                     top: Radius.circular(12),
                                   ),
                                 ),
-                                child: const Icon(Icons.photo_album,
-                                    size: 40, color: Colors.grey),
+                                child: const Icon(
+                                  Icons.photo_album,
+                                  size: 40,
+                                  color: Colors.grey,
+                                ),
                               ),
                       ),
                       Padding(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 6,
+                        ),
                         child: Text(
                           album.title,
                           maxLines: 1,
@@ -235,57 +246,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
               );
             },
-          )
-        ],
-      ),
-    );
-  }
-
-  // ------------------ ОБЩИЕ АЛЬБОМЫ ------------------
-  Widget _buildSharedAlbumsSection(BuildContext context) {
-    final sharedAlbums = [
-      {'title': 'Свадьба Анны и Игоря', 'photos': 24, 'videos': 3},
-      {'title': 'Юбилей родителей', 'photos': 18, 'videos': 2},
-      {'title': 'Выпускной вечер', 'photos': 32, 'videos': 4},
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Общие альбомы',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
           ),
-          const SizedBox(height: 12),
-          ...sharedAlbums.map((album) {
-            return Card(
-              elevation: 1,
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey[200]!, width: 1),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                title: Text(album['title'] as String),
-                subtitle: Text(
-                    '${album['photos']} фото • ${album['videos']} видео'),
-                onTap: () {},
-              ),
-            );
-          })
         ],
       ),
     );

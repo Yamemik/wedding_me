@@ -79,6 +79,27 @@ class ApiService extends ChangeNotifier {
     return [];
   }
 
+  Future<List<Album>> getPublicAlbums() async {
+    try {
+      final response = await _dio.get(
+        "/albums",
+        options: Options(headers: _defaultHeaders()),
+      );
+
+      if (response.statusCode == 200 && response.data is List) {
+        return (response.data as List)
+            .map((json) => Album.fromJson(json))
+            .toList();
+      }
+
+      return [];
+    } catch (e) {
+      // Можно логировать ошибку
+      print("Ошибка при получении публичных альбомов: $e");
+      return [];
+    }
+  }
+
   Future<Album> createAlbum(Album album) async {
     final response = await _dio.post(
       '/albums/',

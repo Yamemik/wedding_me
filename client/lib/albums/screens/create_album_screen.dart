@@ -7,7 +7,6 @@ import '../../services/api_service.dart';
 import '../../auth/services/auth_service.dart';
 import '../models/album.dart';
 
-
 class CreateAlbumScreen extends StatefulWidget {
   const CreateAlbumScreen({super.key});
 
@@ -19,13 +18,11 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-
   final List<XFile> _selectedFiles = [];
   bool _isPublic = true;
   bool _isLoading = false;
   double _uploadProgress = 0.0;
   String? _errorMessage;
-  String? _successMessage;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -43,20 +40,15 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
               children: [
                 if (_errorMessage != null)
                   _buildMessageCard(_errorMessage!, Colors.red, Icons.error),
-                if (_successMessage != null)
-                  _buildMessageCard(
-                      _successMessage!, Colors.green, Icons.check_circle),
                 TextFormField(
                   controller: _titleController,
                   decoration: const InputDecoration(labelText: 'Название альбома*'),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Введите название' : null,
+                  validator: (v) => v == null || v.isEmpty ? 'Введите название' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _descriptionController,
-                  decoration:
-                      const InputDecoration(labelText: 'Описание (необязательно)'),
+                  decoration: const InputDecoration(labelText: 'Описание (необязательно)'),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 12),
@@ -97,10 +89,7 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
                                 right: 0,
                                 child: GestureDetector(
                                   onTap: () => setState(() => _selectedFiles.removeAt(i)),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.red,
-                                  ),
+                                  child: const Icon(Icons.close, color: Colors.red),
                                 ),
                               ),
                             ],
@@ -143,7 +132,6 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
             onPressed: () {
               setState(() {
                 _errorMessage = null;
-                _successMessage = null;
               });
             },
           ),
@@ -155,10 +143,10 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
   Future<void> _pickFiles() async {
     try {
       final images = await _picker.pickMultiImage(imageQuality: 85);
-      setState(() {
-        _selectedFiles.addAll(images);
-      });
-        } catch (e) {
+      if (images != null) {
+        setState(() => _selectedFiles.addAll(images));
+      }
+    } catch (e) {
       setState(() => _errorMessage = 'Ошибка выбора файлов: $e');
     }
   }
@@ -167,10 +155,7 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
     final formData = FormData();
     for (final file in files) {
       formData.files.add(
-        MapEntry(
-          'files',
-          await MultipartFile.fromFile(file.path, filename: file.name),
-        ),
+        MapEntry('files', await MultipartFile.fromFile(file.path, filename: file.name)),
       );
     }
     return formData;
@@ -178,8 +163,7 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
 
   Future<void> _createAlbum() async {
     if (!_formKey.currentState!.validate() || _selectedFiles.isEmpty) {
-      setState(() => _errorMessage =
-          'Заполните все обязательные поля и добавьте хотя бы один файл');
+      setState(() => _errorMessage = 'Заполните все обязательные поля и добавьте хотя бы один файл');
       return;
     }
 
@@ -193,7 +177,6 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
       _isLoading = true;
       _uploadProgress = 0;
       _errorMessage = null;
-      _successMessage = null;
     });
 
     try {
@@ -202,40 +185,24 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
         title: _titleController.text,
         visible: _isPublic,
         userId: user.id,
-        photos: [], // ← обязательно для новой модели
+        photos: [],
       );
 
       final apiService = Provider.of<ApiService>(context, listen: false);
 
-      // Создание альбома
       final createdAlbum = await apiService.createAlbum(album);
-
-      // Формируем FormData для загрузки фото
       final formData = await _buildFormData(_selectedFiles);
 
-      // Загружаем фото в альбом
       await apiService.uploadAlbumFiles(
         createdAlbum.id,
         formData,
-        onSendProgress: (sent, total) {
-          setState(() {
-            _uploadProgress = sent / total;
-          });
-        },
+        onSendProgress: (sent, total) => setState(() => _uploadProgress = sent / total),
       );
 
-      // Получаем обновленный альбом с фото
       final updatedAlbum = await apiService.getAlbum(createdAlbum.id);
 
-      setState(() {
-        _successMessage = 'Альбом "${updatedAlbum.title}" успешно создан!';
-        _isLoading = false;
-      });
-
-      if (mounted) {
-        Navigator.pushReplacementNamed(
-            context, '/album/${updatedAlbum.id}');
-      }
+      // Возвращаем новый альбом в предыдущий экран
+      if (mounted) Navigator.pop(context, updatedAlbum);
     } catch (e) {
       setState(() {
         _errorMessage = 'Ошибка при создании альбома: $e';
