@@ -10,6 +10,7 @@ import 'auth/screens/reset_password_screen.dart';
 import 'auth/services/auth_service.dart';
 import 'home/screens/home_screen.dart';
 import 'home/screens/profile_screen.dart';
+import 'home/widgets/search_screen.dart';
 import 'onboarding/screens/onboarding_screen.dart';
 import 'albums/screens/create_album_screen.dart';
 import 'albums/screens/album_detail_screen.dart';
@@ -88,6 +89,7 @@ class MyApp extends StatelessWidget {
         '/create-album': (_) => const CreateAlbumScreen(),
         '/albums': (_) => const AllAlbumsScreen(),
         '/profile': (_) => const ProfileScreen(),
+        '/search': (_) => const SearchScreen(),
       },
 
       // 🔥 ВАЖНО: обработка динамических URL
