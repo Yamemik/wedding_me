@@ -17,6 +17,6 @@ class Photo(Base):
     album_id = Column(Integer, ForeignKey("albums.id", ondelete="CASCADE"), nullable=False)
     album = relationship("Album", back_populates="photos")
     
-    tags = relationship("PhotoTag", back_populates="photo", cascade="all, delete")
-    comments = relationship("Comment", back_populates="photo", cascade="all, delete")
-    likes = relationship("Like", back_populates="photo", cascade="all, delete")
+    tags = relationship("PhotoTag", back_populates="photo", cascade="all, delete", lazy="selectin")
+    comments = relationship("Comment", back_populates="photo", cascade="all, delete", lazy="selectin")
+    likes = relationship("Like", back_populates="photo", cascade="all, delete", lazy="selectin")

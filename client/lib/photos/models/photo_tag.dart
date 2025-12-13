@@ -1,6 +1,7 @@
 import 'package:wedding_me/photos/models/photo.dart';
 import 'package:wedding_me/tags/models/tag.dart';
 
+
 class PhotoTag {
   final int id;
   final int photoId;

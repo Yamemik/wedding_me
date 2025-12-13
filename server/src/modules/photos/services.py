@@ -1,12 +1,17 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from src.modules.photos.models import Photo
 from src.modules.photos.schemas import PhotoCreate, PhotoUpdate
 
 
 async def get_photo(db: AsyncSession, photo_id: int):
-    result = await db.execute(select(Photo).where(Photo.id == photo_id))
+    result = await db.execute(select(Photo).where(Photo.id == photo_id)
+                              .options(selectinload(Photo.likes))
+                              .options(selectinload(Photo.comments))
+                              .options(selectinload(Photo.tags))
+                              )
     return result.scalar_one_or_none()
 
 

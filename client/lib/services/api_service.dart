@@ -164,6 +164,14 @@ class ApiService extends ChangeNotifier {
     );
   }
 
+  Future<Photo> getPhoto(int id) async {
+    final res = await _dio.get(
+      "/photos/$id",
+      options: Options(headers: _defaultHeaders()),
+    );
+    return Photo.fromJson(res.data);
+  }
+
   /// ================= COMMENTS =================
   Future<List<Comment>> getPhotoComments(int photoId) async {
     final response = await _dio.get(
@@ -177,14 +185,13 @@ class ApiService extends ChangeNotifier {
     return [];
   }
 
-  Future<Comment> addComment(int photoId, String text) async {
-    final response = await _dio.post(
-      '/photos/$photoId/comments',
-      data: {'text': text},
-      options: Options(headers: _defaultHeaders()),
-    );
-    return Comment.fromJson(response.data);
-  }
+Future<void> createComment(int photoId, String text) async {
+  await _dio.post(
+    "/comments",
+    data: {"photo_id": photoId, "text": text},
+    options: Options(headers: _defaultHeaders()),
+  );
+}
 
   /// ================= LIKES =================
   Future<Like> likePhoto(int photoId) async {
@@ -201,6 +208,14 @@ class ApiService extends ChangeNotifier {
       options: Options(headers: _defaultHeaders()),
     );
   }
+
+  Future<void> toggleLike(int photoId) async {
+  await _dio.post(
+    "/likes/toggle",
+    data: {"photo_id": photoId},
+    options: Options(headers: _defaultHeaders()),
+  );
+}
 
   /// ================= TAGS =================
   Future<List<Tag>> getTags() async {

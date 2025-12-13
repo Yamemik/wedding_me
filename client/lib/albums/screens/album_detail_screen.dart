@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../photos/screens/photo_screen.dart';
 import '../models/album.dart';
 import '../../services/api_service.dart';
-
 
 class AlbumDetailScreen extends StatefulWidget {
   final int albumId;
@@ -42,10 +42,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
       formData.files.add(
         MapEntry(
           'files',
-          await MultipartFile.fromFile(
-            file.path,
-            filename: file.name,
-          ),
+          await MultipartFile.fromFile(file.path, filename: file.name),
         ),
       );
     }
@@ -59,28 +56,36 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
     if (files.isEmpty) return;
 
     final api = context.read<ApiService>();
-
     final formData = await buildFormData(files);
 
-    await api.uploadAlbumFiles(
-      widget.albumId,
-      formData,
-      onSendProgress: (sent, total) {
-        print("Отправлено: $sent / $total");
-      },
-    );
+    try {
+      await api.uploadAlbumFiles(
+        widget.albumId,
+        formData,
+        onSendProgress: (sent, total) {
+          print("Отправлено: $sent / $total");
+        },
+      );
 
-    // обновляем альбом
-    final updated = await api.getAlbum(widget.albumId);
-    setState(() => album = updated);
+      // обновляем альбом
+      final updated = await api.getAlbum(widget.albumId);
+
+      // Проверяем, монтирован ли виджет перед вызовом setState
+      if (mounted) {
+        setState(() {
+          album = updated;
+        });
+      }
+    } catch (e) {
+      // Обработка ошибки загрузки
+      throw Exception(e);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -101,11 +106,18 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
           final photo = album!.photos[i];
           final imageUrl = "http://10.0.2.2:8000${photo.path}";
 
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PhotoScreen(photoId: photo.id),
+                ),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(imageUrl, fit: BoxFit.cover),
             ),
           );
         },

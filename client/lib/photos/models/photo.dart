@@ -33,7 +33,7 @@ class Photo {
 
   factory Photo.fromJson(Map<String, dynamic> json) {
     return Photo(
-      id: json['id'],
+      id: json['id'] ?? 0,
       path: json['path'] ?? '',
       title: json['title'],
       name: json['name'],

@@ -24,7 +24,7 @@ async def read_photos(skip: int = 0, limit: int = 100, db: AsyncSession = Depend
     return await services.get_photos(db, skip, limit)
 
 
-@router.get("/{photo_id}", response_model=schemas.PhotoBase)
+@router.get("/{photo_id}", response_model=schemas.PhotoRead)
 async def read_photo(photo_id: int, db: AsyncSession = Depends(get_db)):
     return await services.get_photo(db, photo_id)
 
