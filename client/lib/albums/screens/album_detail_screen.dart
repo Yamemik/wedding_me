@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../photos/screens/photo_screen.dart';
 import '../models/album.dart';
 import '../../services/api_service.dart';
-import '../../users/models/user.dart';
 
 
 class AlbumDetailScreen extends StatefulWidget {
