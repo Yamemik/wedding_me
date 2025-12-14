@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../services/api_service.dart';
 import '../models/photo.dart';
 
 
 class PhotoScreen extends StatefulWidget {
   final int photoId;
+  final bool isOwner;
 
-  const PhotoScreen({required this.photoId, super.key});
+  const PhotoScreen({required this.photoId, required this.isOwner, super.key});
 
   @override
   State<PhotoScreen> createState() => _PhotoScreenState();
@@ -53,6 +53,47 @@ class _PhotoScreenState extends State<PhotoScreen> {
     await loadPhoto();
   }
 
+  Future<void> _deletePhoto() async {
+    final api = context.read<ApiService>();
+
+    // Показываем диалоговое окно с подтверждением
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Удалить фото?'),
+          content: Text('Вы уверены, что хотите удалить это фото?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Отмена'),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Вызываем метод для удаления фото
+                await api.deletePhoto(photo!.id);
+
+                // Закрываем диалоговое окно
+                Navigator.of(context).pop();
+
+                // Показываем snackbar или уведомление об успехе
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Фото успешно удалено')),
+                );
+
+                // Закрываем экран после удаления
+                Navigator.of(context).pop();
+              },
+              child: Text('Удалить'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -65,13 +106,20 @@ class _PhotoScreenState extends State<PhotoScreen> {
     final likes = photo!.likes?.length ?? 0;
 
     return Scaffold(
-      appBar: AppBar(title: Text(photo!.title ?? "Фото")),
+      appBar: AppBar(
+        title: Text(photo!.title ?? "Фото"),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.delete, color: Colors.red),
+            onPressed: _deletePhoto,
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
             /// Фото
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -167,7 +215,6 @@ class _PhotoScreenState extends State<PhotoScreen> {
               onPressed: sendComment,
               child: const Text("Отправить"),
             ),
-
           ],
         ),
       ),

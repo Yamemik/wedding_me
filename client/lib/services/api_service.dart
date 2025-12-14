@@ -6,7 +6,6 @@ import '../auth/services/auth_service.dart';
 import '../albums/models/album.dart';
 import '../photos/models/photo.dart';
 import '../comments/models/comment.dart';
-import '../likes/models/like.dart';
 import '../tags/models/tag.dart';
 import '../users/models/user.dart';
 
@@ -25,7 +24,7 @@ class ApiService extends ChangeNotifier {
     _dio.options.connectTimeout = const Duration(seconds: 15);
     _dio.options.receiveTimeout = const Duration(seconds: 15);
     _dio.options.headers['Content-Type'] = 'application/json';
-    
+
     // _dio.options.followRedirects = true;
     // _dio.options.maxRedirects = 5;
     // _dio.options.validateStatus = (status) => status! < 500;
@@ -148,6 +147,18 @@ class ApiService extends ChangeNotifier {
     }
   }
 
+    Future<void> deleteAlbum(int albumId) async {
+    try {
+      final response = await _dio.delete(
+        '/albums/$albumId',
+        options: Options(headers: _defaultHeaders()),
+      );
+      print('Альбом успешно удалено: ${response.data}');
+    } catch (e) {
+      print('Ошибка при удалении альбома: $e');
+    }
+  }
+
   /// ================= PHOTOS =================
   Future<List<Photo>> getAlbumPhotos(int albumId) async {
     try {
@@ -206,6 +217,18 @@ class ApiService extends ChangeNotifier {
     } on DioException catch (e) {
       print("Ошибка при получении фотографии: $e");
       rethrow;
+    }
+  }
+
+  Future<void> deletePhoto(int photoId) async {
+    try {
+      final response = await _dio.delete(
+        '/photos/$photoId', // Путь для удаления фотографии
+        options: Options(headers: _defaultHeaders()),
+      );
+      print('Фото успешно удалено: ${response.data}');
+    } catch (e) {
+      print('Ошибка при удалении фото: $e');
     }
   }
 

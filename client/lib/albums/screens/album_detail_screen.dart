@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../photos/screens/photo_screen.dart';
 import '../models/album.dart';
 import '../../services/api_service.dart';
+import '../../users/models/user.dart';
+
 
 class AlbumDetailScreen extends StatefulWidget {
   final int albumId;
@@ -82,45 +84,80 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
     }
   }
 
+  Future<void> deleteAlbum() async {
+    final api = context.read<ApiService>();
+    try {
+      await api.deleteAlbum(widget.albumId);  // Метод для удаления альбома
+      Navigator.pop(context);  // Возвращаемся на экран списка альбомов
+    } catch (e) {
+      // Обработка ошибки удаления
+      print("Ошибка при удалении альбома: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentUser = context.watch<ApiService>().currentUser;
+
     if (loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(album!.title)),
-      floatingActionButton: FloatingActionButton(
-        onPressed: uploadPhotos,
-        child: const Icon(Icons.add_a_photo),
-      ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(10),
-        itemCount: album!.photos.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-        ),
-        itemBuilder: (context, i) {
-          final photo = album!.photos[i];
-          final imageUrl = "http://10.0.2.2:8000${photo.path}";
-
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PhotoScreen(photoId: photo.id),
-                ),
-              );
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(imageUrl, fit: BoxFit.cover),
+      appBar: AppBar(
+        title: Text(album!.title),
+        actions: [
+          /// Кнопка удаления альбома с иконкой корзины
+          if (currentUser != null && album != null && currentUser.id == album!.userId)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: deleteAlbum,
             ),
-          );
-        },
+        ],
+      ),
+      floatingActionButton: currentUser != null && album != null && currentUser.id == album!.userId
+          ? FloatingActionButton(
+              onPressed: uploadPhotos,
+              child: const Icon(Icons.add_a_photo),
+            )
+          : null, // Показываем кнопку добавления файлов только владельцу альбома
+      body: Column(
+        children: [
+          /// Сетка с фотографиями
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(10),
+              itemCount: album!.photos.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemBuilder: (context, i) {
+                final photo = album!.photos[i];
+                final imageUrl = "http://10.0.2.2:8000${photo.path}";
+
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PhotoScreen(
+                          photoId: photo.id,
+                          isOwner: currentUser != null && currentUser.id == album!.userId,  // Передаем isOwner
+                        ),
+                      ),
+                    );
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(imageUrl, fit: BoxFit.cover),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
