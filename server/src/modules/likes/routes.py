@@ -20,13 +20,3 @@ async def read_likes(skip: int = 0, limit: int = 100, db: AsyncSession = Depends
 @router.get("/{like_id}", response_model=schemas.LikeBase)
 async def read_like(like_id: int, db: AsyncSession = Depends(get_db)):
     return await services.get_like(db, like_id)
-
-
-@router.put("/{like_id}", response_model=schemas.LikeBase)
-async def update_like(like_id: int, like_in: schemas.LikeUpdate, db: AsyncSession = Depends(get_db)):
-    return await services.update_like(db, like_id, like_in)
-
-
-@router.delete("/{like_id}")
-async def delete_like(like_id: int, db: AsyncSession = Depends(get_db)):
-    return await services.delete_like(db, like_id)

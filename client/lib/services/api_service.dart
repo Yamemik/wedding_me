@@ -25,6 +25,10 @@ class ApiService extends ChangeNotifier {
     _dio.options.connectTimeout = const Duration(seconds: 15);
     _dio.options.receiveTimeout = const Duration(seconds: 15);
     _dio.options.headers['Content-Type'] = 'application/json';
+    
+    // _dio.options.followRedirects = true;
+    // _dio.options.maxRedirects = 5;
+    // _dio.options.validateStatus = (status) => status! < 500;
     _init();
   }
 
@@ -62,21 +66,25 @@ class ApiService extends ChangeNotifier {
 
   /// ================= ALBUMS =================
   Future<List<Album>> getMyAlbums() async {
-    final user = AuthService.currentUser!;
-    final userId = user.id;
+    try {
+      final user = AuthService.currentUser!;
+      final userId = user.id;
 
-    final response = await _dio.get(
-      "/albums/user/$userId/albums",
-      options: Options(headers: _defaultHeaders()),
-    );
+      final response = await _dio.get(
+        "/albums/user/$userId/albums",
+        options: Options(headers: _defaultHeaders()),
+      );
 
-    if (response.data is List) {
-      return (response.data as List)
-          .map((json) => Album.fromJson(json))
-          .toList();
+      if (response.data is List) {
+        return (response.data as List)
+            .map((json) => Album.fromJson(json))
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      print("Ошибка при получении альбомов: $e");
+      return [];
     }
-
-    return [];
   }
 
   Future<List<Album>> getPublicAlbums() async {
@@ -91,27 +99,35 @@ class ApiService extends ChangeNotifier {
             .map((json) => Album.fromJson(json))
             .toList();
       }
-
       return [];
     } catch (e) {
-      // Можно логировать ошибку
       print("Ошибка при получении публичных альбомов: $e");
       return [];
     }
   }
 
   Future<Album> createAlbum(Album album) async {
-    final response = await _dio.post(
-      '/albums/',
-      data: album.toJson(),
-      options: Options(headers: _defaultHeaders()),
-    );
-    return Album.fromJson(response.data);
+    try {
+      final response = await _dio.post(
+        '/albums/',
+        data: album.toJson(),
+        options: Options(headers: _defaultHeaders()),
+      );
+      return Album.fromJson(response.data);
+    } on DioException catch (e) {
+      print("Ошибка при создании альбома: $e");
+      rethrow;
+    }
   }
 
   Future<Album> getAlbum(int albumId) async {
-    final response = await _dio.get('/albums/$albumId');
-    return Album.fromJson(response.data);
+    try {
+      final response = await _dio.get('/albums/$albumId');
+      return Album.fromJson(response.data);
+    } on DioException catch (e) {
+      print("Ошибка при получении альбома: $e");
+      rethrow;
+    }
   }
 
   Future<void> uploadAlbumFiles(
@@ -119,23 +135,34 @@ class ApiService extends ChangeNotifier {
     FormData formData, {
     Function(int, int)? onSendProgress,
   }) async {
-    await _dio.post(
-      '/albums/$albumId/files/',
-      data: formData,
-      options: Options(headers: {'Content-Type': 'multipart/form-data'}),
-      onSendProgress: onSendProgress,
-    );
+    try {
+      await _dio.post(
+        '/albums/$albumId/files/',
+        data: formData,
+        options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+        onSendProgress: onSendProgress,
+      );
+    } on DioException catch (e) {
+      print("Ошибка при загрузке файлов в альбом: $e");
+      rethrow;
+    }
   }
 
   /// ================= PHOTOS =================
   Future<List<Photo>> getAlbumPhotos(int albumId) async {
-    final response = await _dio.get(
-      '/albums/$albumId/photos',
-      options: Options(headers: _defaultHeaders()),
-    );
-    final data = response.data;
-    if (data is List) return data.map((json) => Photo.fromJson(json)).toList();
-    return [];
+    try {
+      final response = await _dio.get(
+        '/albums/$albumId/photos',
+        options: Options(headers: _defaultHeaders()),
+      );
+      final data = response.data;
+      if (data is List)
+        return data.map((json) => Photo.fromJson(json)).toList();
+      return [];
+    } on DioException catch (e) {
+      print("Ошибка при получении фотографий альбома: $e");
+      return [];
+    }
   }
 
   Future<void> uploadPhoto(
@@ -143,96 +170,128 @@ class ApiService extends ChangeNotifier {
     File file, {
     Function(int sent, int total)? onSendProgress,
   }) async {
-    final formData = FormData.fromMap({
-      "album_id": albumId,
-      "file": await MultipartFile.fromFile(
-        file.path,
-        filename: file.path.split("/").last,
-      ),
-    });
+    try {
+      final formData = FormData.fromMap({
+        "album_id": albumId,
+        "file": await MultipartFile.fromFile(
+          file.path,
+          filename: file.path.split("/").last,
+        ),
+      });
 
-    await _dio.post(
-      "/photos/upload",
-      data: formData,
-      options: Options(
-        headers: {
-          "Authorization": _dio.options.headers["Authorization"] ?? "",
-          "Content-Type": "multipart/form-data",
-        },
-      ),
-      onSendProgress: onSendProgress,
-    );
+      await _dio.post(
+        "/photos/upload",
+        data: formData,
+        options: Options(
+          headers: {
+            "Authorization": _dio.options.headers["Authorization"] ?? "",
+            "Content-Type": "multipart/form-data",
+          },
+        ),
+        onSendProgress: onSendProgress,
+      );
+    } on DioException catch (e) {
+      print("Ошибка при загрузке фотографии: $e");
+      rethrow;
+    }
   }
 
   Future<Photo> getPhoto(int id) async {
-    final res = await _dio.get(
-      "/photos/$id",
-      options: Options(headers: _defaultHeaders()),
-    );
-    return Photo.fromJson(res.data);
+    try {
+      final res = await _dio.get(
+        "/photos/$id",
+        options: Options(headers: _defaultHeaders()),
+      );
+      return Photo.fromJson(res.data);
+    } on DioException catch (e) {
+      print("Ошибка при получении фотографии: $e");
+      rethrow;
+    }
   }
 
   /// ================= COMMENTS =================
   Future<List<Comment>> getPhotoComments(int photoId) async {
-    final response = await _dio.get(
-      '/photos/$photoId/comments',
-      options: Options(headers: _defaultHeaders()),
-    );
-    final data = response.data;
-    if (data is List) {
-      return data.map((json) => Comment.fromJson(json)).toList();
+    try {
+      final response = await _dio.get(
+        '/photos/$photoId/comments',
+        options: Options(headers: _defaultHeaders()),
+      );
+      final data = response.data;
+      if (data is List) {
+        return data.map((json) => Comment.fromJson(json)).toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      print("Ошибка при получении комментариев: $e");
+      return [];
     }
-    return [];
   }
 
-Future<void> createComment(int photoId, String text) async {
-  await _dio.post(
-    "/comments",
-    data: {"photo_id": photoId, "text": text},
-    options: Options(headers: _defaultHeaders()),
-  );
-}
+  Future<void> createComment(int photoId, String text) async {
+    try {
+      await _dio.post(
+        "/comments/",
+        data: {"photo_id": photoId, "text": text, "user_id": _currentUser!.id},
+        options: Options(headers: _defaultHeaders()),
+      );
+    } on DioException catch (e) {
+      print("Ошибка при добавлении комментария: $e");
+      rethrow;
+    }
+  }
 
   /// ================= LIKES =================
-  Future<Like> likePhoto(int photoId) async {
-    final response = await _dio.post(
-      '/photos/$photoId/like',
-      options: Options(headers: _defaultHeaders()),
-    );
-    return Like.fromJson(response.data);
-  }
-
   Future<void> unlikePhoto(int photoId) async {
-    await _dio.delete(
-      '/photos/$photoId/like',
-      options: Options(headers: _defaultHeaders()),
-    );
+    try {
+      await _dio.delete(
+        '/photos/$photoId/like',
+        options: Options(headers: _defaultHeaders()),
+      );
+    } on DioException catch (e) {
+      print("Ошибка при удалении лайка: $e");
+      rethrow;
+    }
   }
 
   Future<void> toggleLike(int photoId) async {
-  await _dio.post(
-    "/likes/toggle",
-    data: {"photo_id": photoId},
-    options: Options(headers: _defaultHeaders()),
-  );
-}
+    try {
+      await _dio.post(
+        "/likes/",
+        data: {"photo_id": photoId, "user_id": _currentUser!.id},
+        options: Options(headers: _defaultHeaders()),
+      );
+    } on DioException catch (e) {
+      print("Ошибка при переключении лайка: $e");
+      rethrow;
+    }
+  }
 
   /// ================= TAGS =================
   Future<List<Tag>> getTags() async {
-    final response = await _dio.get(
-      '/tags',
-      options: Options(headers: _defaultHeaders()),
-    );
-    final data = response.data;
-    if (data is List) return data.map((json) => Tag.fromJson(json)).toList();
-    return [];
+    try {
+      final response = await _dio.get(
+        '/tags',
+        options: Options(headers: _defaultHeaders()),
+      );
+      final data = response.data;
+      if (data is List) return data.map((json) => Tag.fromJson(json)).toList();
+      return [];
+    } on DioException catch (e) {
+      print("Ошибка при получении тегов: $e");
+      return [];
+    }
   }
 
   Future<void> addTagToPhoto(int photoId, int tagId) async {
-    await _dio.post(
-      '/photos/$photoId/tags/$tagId',
-      options: Options(headers: _defaultHeaders()),
-    );
+    try {
+      await _dio.post(
+        '/photos/$photoId/tags/$tagId',
+        options: Options(headers: _defaultHeaders()),
+      );
+    } on DioException catch (e) {
+      print("Ошибка при добавлении тега к фотографии: $e");
+      rethrow;
+    }
   }
 
   /// ================= LOGOUT =================

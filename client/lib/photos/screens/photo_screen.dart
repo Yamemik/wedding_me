@@ -134,7 +134,7 @@ class _PhotoScreenState extends State<PhotoScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(c.user?.email ?? "Пользователь",
+                            Text(c.user?.name ?? "Пользователь",
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold)),
                             const SizedBox(height: 4),

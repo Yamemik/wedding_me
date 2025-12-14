@@ -16,5 +16,5 @@ class Comment(Base):
     photo_id = Column(Integer, ForeignKey("photos.id", ondelete="CASCADE"), nullable=False)
 
     # связи
-    user = relationship("User", back_populates="comments")
+    user = relationship("User", back_populates="comments", lazy="selectin")
     photo = relationship("Photo", back_populates="comments")
