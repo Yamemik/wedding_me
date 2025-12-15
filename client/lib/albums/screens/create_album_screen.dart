@@ -143,10 +143,8 @@ class _CreateAlbumScreenState extends State<CreateAlbumScreen> {
   Future<void> _pickFiles() async {
     try {
       final images = await _picker.pickMultiImage(imageQuality: 85);
-      if (images != null) {
-        setState(() => _selectedFiles.addAll(images));
-      }
-    } catch (e) {
+      setState(() => _selectedFiles.addAll(images));
+        } catch (e) {
       setState(() => _errorMessage = 'Ошибка выбора файлов: $e');
     }
   }
