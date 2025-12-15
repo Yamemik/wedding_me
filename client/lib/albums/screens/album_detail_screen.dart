@@ -7,7 +7,6 @@ import '../../photos/screens/photo_screen.dart';
 import '../models/album.dart';
 import '../../services/api_service.dart';
 
-
 class AlbumDetailScreen extends StatefulWidget {
   final int albumId;
 
@@ -86,10 +85,15 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
   Future<void> deleteAlbum() async {
     final api = context.read<ApiService>();
     try {
-      await api.deleteAlbum(widget.albumId);  // Метод для удаления альбома
-      Navigator.pop(context);  // Возвращаемся на экран списка альбомов
+      await api.deleteAlbum(widget.albumId);
+
+      if (!mounted) return;
+
+      Navigator.pop(
+        context,
+        widget.albumId,
+      ); // ⬅ возвращаем ID удалённого альбома
     } catch (e) {
-      // Обработка ошибки удаления
       print("Ошибка при удалении альбома: $e");
     }
   }
@@ -107,19 +111,24 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
         title: Text(album!.title),
         actions: [
           /// Кнопка удаления альбома с иконкой корзины
-          if (currentUser != null && album != null && currentUser.id == album!.userId)
+          if (currentUser != null &&
+              album != null &&
+              currentUser.id == album!.userId)
             IconButton(
               icon: const Icon(Icons.delete),
-              onPressed: deleteAlbum,
+              onPressed: confirmDeleteAlbum,
             ),
         ],
       ),
-      floatingActionButton: currentUser != null && album != null && currentUser.id == album!.userId
-          ? FloatingActionButton(
-              onPressed: uploadPhotos,
-              child: const Icon(Icons.add_a_photo),
-            )
-          : null, // Показываем кнопку добавления файлов только владельцу альбома
+      floatingActionButton:
+          currentUser != null &&
+                  album != null &&
+                  currentUser.id == album!.userId
+              ? FloatingActionButton(
+                onPressed: uploadPhotos,
+                child: const Icon(Icons.add_a_photo),
+              )
+              : null, // Показываем кнопку добавления файлов только владельцу альбома
       body: Column(
         children: [
           /// Сетка с фотографиями
@@ -137,16 +146,26 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                 final imageUrl = "http://10.0.2.2:8000${photo.path}";
 
                 return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    final deletedPhotoId = await Navigator.push<int>(
                       context,
                       MaterialPageRoute(
                         builder: (_) => PhotoScreen(
                           photoId: photo.id,
-                          isOwner: currentUser != null && currentUser.id == album!.userId,  // Передаем isOwner
+                          isOwner: currentUser != null && currentUser.id == album!.userId,
                         ),
                       ),
                     );
+
+                    if (deletedPhotoId != null) {
+                      setState(() {
+                        album!.photos.removeWhere((p) => p.id == deletedPhotoId);
+                      });
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Фото удалено")),
+                      );
+                    }
                   },
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
@@ -159,5 +178,34 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> confirmDeleteAlbum() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Удалить альбом?"),
+          content: const Text(
+            "Альбом и все фотографии в нём будут удалены без возможности восстановления.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Отмена"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Удалить"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      await deleteAlbum();
+    }
   }
 }

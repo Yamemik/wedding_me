@@ -190,13 +190,27 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             itemBuilder: (_, i) {
               final album = myAlbums[i];
-              final preview = album.photos.isNotEmpty
-                  ? "http://10.0.2.2:8000${album.photos.first.path}"
-                  : null;
+              final preview =
+                  album.photos.isNotEmpty
+                      ? "http://10.0.2.2:8000${album.photos.first.path}"
+                      : null;
 
               return GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, "/album/${album.id}");
+                onTap: () async {
+                  final deletedAlbumId = await Navigator.pushNamed(
+                    context,
+                    "/album/${album.id}",
+                  );
+
+                  if (deletedAlbumId is int) {
+                    setState(() {
+                      myAlbums.removeWhere((a) => a.id == deletedAlbumId);
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Альбом удалён')),
+                    );
+                  }
                 },
                 child: Container(
                   decoration: BoxDecoration(
@@ -207,30 +221,31 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: [
                       Expanded(
-                        child: preview != null
-                            ? ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(12),
-                                ),
-                                child: Image.network(
-                                  preview,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Container(
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.vertical(
+                        child:
+                            preview != null
+                                ? ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
                                     top: Radius.circular(12),
                                   ),
+                                  child: Image.network(
+                                    preview,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                                : Container(
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.photo_album,
+                                    size: 40,
+                                    color: Colors.grey,
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.photo_album,
-                                  size: 40,
-                                  color: Colors.grey,
-                                ),
-                              ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(

@@ -8,7 +8,11 @@ class PhotoScreen extends StatefulWidget {
   final int photoId;
   final bool isOwner;
 
-  const PhotoScreen({required this.photoId, required this.isOwner, super.key});
+  const PhotoScreen({
+    required this.photoId,
+    required this.isOwner,
+    super.key,
+  });
 
   @override
   State<PhotoScreen> createState() => _PhotoScreenState();
@@ -29,6 +33,8 @@ class _PhotoScreenState extends State<PhotoScreen> {
   Future<void> loadPhoto() async {
     final api = context.read<ApiService>();
     final data = await api.getPhoto(widget.photoId);
+
+    if (!mounted) return;
 
     setState(() {
       photo = data;
@@ -53,45 +59,47 @@ class _PhotoScreenState extends State<PhotoScreen> {
     await loadPhoto();
   }
 
+  /// ✅ Подтверждение + удаление фото
   Future<void> _deletePhoto() async {
     final api = context.read<ApiService>();
 
-    // Показываем диалоговое окно с подтверждением
-    showDialog(
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Удалить фото?'),
-          content: Text('Вы уверены, что хотите удалить это фото?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Отмена'),
-            ),
-            TextButton(
-              onPressed: () async {
-                // Вызываем метод для удаления фото
-                await api.deletePhoto(photo!.id);
-
-                // Закрываем диалоговое окно
-                Navigator.of(context).pop();
-
-                // Показываем snackbar или уведомление об успехе
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Фото успешно удалено')),
-                );
-
-                // Закрываем экран после удаления
-                Navigator.of(context).pop();
-              },
-              child: Text('Удалить'),
-            ),
-          ],
-        );
-      },
+      builder: (_) => AlertDialog(
+        title: const Text('Удалить фото?'),
+        content: const Text('Фото будет удалено без возможности восстановления'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
     );
+
+    if (confirm != true) return;
+
+    try {
+      await api.deletePhoto(photo!.id);
+
+      if (!mounted) return;
+
+      // ✅ Возвращаем ID удалённого фото
+      Navigator.pop(context, photo!.id);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Фото удалено')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ошибка при удалении фото')),
+      );
+    }
   }
 
   @override
@@ -108,11 +116,14 @@ class _PhotoScreenState extends State<PhotoScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(photo!.title ?? "Фото"),
+
+        /// ✅ КНОПКА УДАЛЕНИЯ ТОЛЬКО ДЛЯ ВЛАДЕЛЬЦА
         actions: [
-          IconButton(
-            icon: Icon(Icons.delete, color: Colors.red),
-            onPressed: _deletePhoto,
-          ),
+          if (widget.isOwner)
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: _deletePhoto,
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -131,11 +142,13 @@ class _PhotoScreenState extends State<PhotoScreen> {
             Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.favorite,
-                      color: photo!.likes!.isNotEmpty ? Colors.red : Colors.grey),
+                  icon: Icon(
+                    Icons.favorite,
+                    color: photo!.likes!.isNotEmpty ? Colors.red : Colors.grey,
+                  ),
                   onPressed: toggleLike,
                 ),
-                Text("$likes лайков"),
+                Text("$likes"),
               ],
             ),
 
@@ -162,11 +175,7 @@ class _PhotoScreenState extends State<PhotoScreen> {
             ),
             const SizedBox(height: 10),
 
-            ...List.generate(
-              photo!.comments?.length ?? 0,
-              (i) {
-                final c = photo!.comments![i];
-                return Container(
+            ...photo!.comments!.map((c) => Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -174,31 +183,29 @@ class _PhotoScreenState extends State<PhotoScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.person, size: 30),
+                      const Icon(Icons.person),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(c.user?.name ?? "Пользователь",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold)),
+                            Text(
+                              c.user?.name ?? "Пользователь",
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             const SizedBox(height: 4),
                             Text(c.text),
                           ],
                         ),
-                      )
+                      ),
                     ],
                   ),
-                );
-              },
-            ),
+                )),
 
             const SizedBox(height: 20),
 
-            /// Поле для ввода комментария
+            /// Ввод комментария
             TextField(
               controller: commentController,
               decoration: InputDecoration(
