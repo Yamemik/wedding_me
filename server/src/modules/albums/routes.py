@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.dependencies import get_db
@@ -16,6 +16,14 @@ async def create_album(album_in: schemas.AlbumCreate, db: AsyncSession = Depends
 @router.get("/", response_model=list[schemas.AlbumRead])
 async def read_albums(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
     return await services.get_public_albums(db, skip, limit)
+
+
+@router.get("/search", response_model=list[schemas.AlbumRead])
+async def search_albums(
+    q: str = Query(..., min_length=1),
+    db: AsyncSession = Depends(get_db),
+):
+    return await services.get_albums_by_title(db, q)
 
 
 @router.get("/{album_id}", response_model=schemas.AlbumRead)

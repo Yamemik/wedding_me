@@ -29,6 +29,18 @@ async def select_albums_by_user(db: AsyncSession, user_id: int, skip: int = 0, l
     return [AlbumRead.model_validate(album) for album in albums]
 
 
+async def select_albums_by_title(db: AsyncSession, name: str, skip: int = 0, limit: int = 100) -> List[AlbumRead]:
+    stmt = (
+        select(Album)
+        .where(Album.title.ilike(f"%{name}%"))
+        .offset(skip).limit(limit)
+        .options(selectinload(Album.photos))
+        )
+    result = await db.execute(stmt)
+    albums = result.scalars().all()
+    return [AlbumRead.model_validate(album) for album in albums]
+
+
 async def add_album(db: AsyncSession, payload: AlbumCreate) -> AlbumRead:
     db_obj = Album(title=payload.title, visible=payload.visible, user_id=payload.user_id)
     db.add(db_obj)

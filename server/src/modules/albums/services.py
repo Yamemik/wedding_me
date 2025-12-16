@@ -23,6 +23,10 @@ async def get_albums_by_user(db: AsyncSession, user_id: int, skip: int = 0, limi
     return await repo.select_albums_by_user(db, user_id, skip, limit)
 
 
+async def get_albums_by_title(db: AsyncSession, title: str, skip: int = 0, limit: int = 100):
+    return await repo.select_albums_by_title(db, title, skip, limit)
+
+
 async def create_album(db: AsyncSession, album: AlbumCreate):
     return await repo.add_album(db, album)
 

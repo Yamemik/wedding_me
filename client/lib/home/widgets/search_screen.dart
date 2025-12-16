@@ -1,4 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../services/api_service.dart';
+import '../../albums/models/album.dart';
+import '../../photos/models/photo.dart';
 
 
 class SearchScreen extends StatefulWidget {
@@ -10,29 +16,69 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
+  Timer? _debounce;
+
+  bool loading = false;
+  String? error;
 
   List<String> searchHistory = [];
-  List<String> results = [];
+  List<Album> albums = [];
+  List<Photo> photos = [];
 
-  void _onSearch(String query) async {
-    if (query.isEmpty) return;
+  // ---------------- SEARCH ----------------
+  void _onSearch(String query) {
+    if (query.trim().isEmpty) return;
 
-    // Добавляем в историю
-    if (!searchHistory.contains(query)) {
-      setState(() => searchHistory.insert(0, query));
-    }
-
-    // ===== ТУТ ТЫ ПОДКЛЮЧИШЬ API =====
-    // final response = await Api.search(query);
-    // setState(() => results = response);
-
-    // Пока просто моковые данные:
-    setState(() {
-      results = List.generate(
-          5, (index) => "Результат $index по запросу \"$query\"");
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _search(query.trim());
     });
   }
 
+  Future<void> _search(String query) async {
+    final api = context.read<ApiService>();
+
+    setState(() {
+      loading = true;
+      error = null;
+    });
+
+    if (!searchHistory.contains(query)) {
+      searchHistory.insert(0, query);
+    }
+
+    try {
+      final res = await api.searchAlbums(query);
+
+      setState(() {
+        albums = res;
+        loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        error = 'Ошибка поиска';
+        loading = false;
+      });
+    }
+  }
+
+  void _clear() {
+    _controller.clear();
+    setState(() {
+      albums.clear();
+      photos.clear();
+      error = null;
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,33 +89,51 @@ class _SearchScreenState extends State<SearchScreen> {
           autofocus: true,
           style: const TextStyle(color: Colors.white, fontSize: 18),
           decoration: InputDecoration(
-            hintText: 'Поиск...',
+            hintText: 'Поиск альбомов и фото...',
             hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
             border: InputBorder.none,
           ),
-          onSubmitted: _onSearch,
+          onChanged: _onSearch,
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.clear, color: Colors.white),
-            onPressed: () {
-              _controller.clear();
-              setState(() => results.clear());
-            },
+            onPressed: _clear,
           )
         ],
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: results.isEmpty
-            ? _buildHistory()
-            : _buildResults(),
+        child: _buildBody(),
       ),
     );
   }
 
-  // === ИСТОРИЯ ПОИСКА ===
+  Widget _buildBody() {
+    if (loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (error != null) {
+      return Center(child: Text(error!, style: const TextStyle(color: Colors.red)));
+    }
+
+    if (albums.isEmpty && photos.isEmpty) {
+      return _buildHistory();
+    }
+
+    return ListView(
+      children: [
+        if (albums.isNotEmpty) ...[
+          _sectionTitle('Альбомы'),
+          ...albums.map(_albumTile),
+          const SizedBox(height: 16),
+        ],
+      ],
+    );
+  }
+
+  // ---------------- HISTORY ----------------
   Widget _buildHistory() {
     if (searchHistory.isEmpty) {
       return Center(
@@ -83,45 +147,40 @@ class _SearchScreenState extends State<SearchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Недавние запросы",
-          style: TextStyle(
-            fontSize: 18,
-            color: Colors.red[800],
-            fontWeight: FontWeight.bold,
+        _sectionTitle('Недавние запросы'),
+        ...searchHistory.map(
+          (h) => ListTile(
+            leading: const Icon(Icons.history),
+            title: Text(h),
+            trailing: const Icon(Icons.north_west),
+            onTap: () {
+              _controller.text = h;
+              _onSearch(h);
+            },
           ),
         ),
-        const SizedBox(height: 10),
-
-        ...searchHistory.map((h) => ListTile(
-              leading: Icon(Icons.history, color: Colors.pink[400]),
-              title: Text(h),
-              trailing: Icon(Icons.north_west, color: Colors.grey[400]),
-              onTap: () {
-                _controller.text = h;
-                _onSearch(h);
-              },
-            )),
       ],
     );
   }
 
-  // === РЕЗУЛЬТАТЫ ===
-  Widget _buildResults() {
-    return ListView.builder(
-      itemCount: results.length,
-      itemBuilder: (_, i) {
-        return Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 2,
-          child: ListTile(
-            title: Text(results[i]),
-            trailing: Icon(Icons.chevron_right, color: Colors.red[700]),
-            onTap: () {},
-          ),
-        );
+  // ---------------- HELPERS ----------------
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _albumTile(Album album) {
+    return ListTile(
+      leading: const Icon(Icons.photo_album, color: Colors.pink),
+      title: Text(album.title),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        Navigator.pushNamed(context, '/album/${album.id}');
       },
     );
   }

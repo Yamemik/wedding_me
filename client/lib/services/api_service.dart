@@ -129,6 +129,15 @@ class ApiService extends ChangeNotifier {
     }
   }
 
+  Future<List<Album>> searchAlbums(String query) async {
+    final res = await _dio.get(
+      '/albums/search',
+      queryParameters: {'q': query},
+    );
+
+    return (res.data as List).map((e) => Album.fromJson(e)).toList();
+  }
+
   Future<void> uploadAlbumFiles(
     int albumId,
     FormData formData, {
@@ -147,7 +156,7 @@ class ApiService extends ChangeNotifier {
     }
   }
 
-    Future<void> deleteAlbum(int albumId) async {
+  Future<void> deleteAlbum(int albumId) async {
     try {
       final response = await _dio.delete(
         '/albums/$albumId',
