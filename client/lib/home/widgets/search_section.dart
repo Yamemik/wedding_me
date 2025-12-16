@@ -15,7 +15,7 @@ class SearchSection extends StatelessWidget {
         ),
         child: TextField(
           decoration: InputDecoration(
-            hintText: 'Поиск альбомов...',
+            hintText: 'Поиск...',
             hintStyle: TextStyle(color: Colors.grey[500]),
             prefixIcon: const Icon(Icons.search, color: Colors.grey),
             border: InputBorder.none,
