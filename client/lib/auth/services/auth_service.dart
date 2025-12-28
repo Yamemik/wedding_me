@@ -50,9 +50,7 @@ class AuthService {
           'username': data.email, // email пользователя
           'password': data.password,
         },
-        options: Options(
-          contentType: Headers.formUrlEncodedContentType,
-        ),
+        options: Options(contentType: Headers.formUrlEncodedContentType),
       );
 
       final map = response.data as Map<String, dynamic>;
@@ -147,6 +145,19 @@ class AuthService {
       debugPrint("PARSE ERROR => $e");
       currentUser = null;
     }
+  }
+
+  static Future<void> updateProfile({
+    required String name,
+    required String surname,
+    required String patr,
+  }) async {
+    final res = await _dio.put(
+      '/me',
+      data: {'name': name, 'surname': surname, 'patr': patr},
+    );
+
+    currentUser = User.fromJson(res.data);
   }
 
   /// Очистить токен

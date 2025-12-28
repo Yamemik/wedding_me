@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../auth/services/auth_service.dart';
+import 'edit_profile_screen.dart';
+
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -19,34 +21,16 @@ class ProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ---------------------- Обложка + аватар ----------------------
+            // ---------------- COVER + AVATAR ----------------
             Stack(
               clipBehavior: Clip.none,
               children: [
-                // Cover
                 Container(
                   height: 200,
                   width: double.infinity,
                   color: Colors.grey[300],
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.photo_camera, size: 40, color: Colors.grey[600]),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Обложка профиля',
-                          style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
 
-                // Avatar
                 Positioned(
                   left: 16,
                   bottom: -50,
@@ -54,103 +38,69 @@ class ProfileScreen extends StatelessWidget {
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: Colors.pink[100], // вторичный цвет
+                      color: Colors.pink[100],
                       borderRadius: BorderRadius.circular(50),
                       border: Border.all(color: Colors.white, width: 4),
                     ),
-                    child: Stack(
-                      children: [
-                        Center(
-                          child: Text(
-                            user.name != null && user.name!.isNotEmpty
-                                ? user.name![0].toUpperCase()
-                                : "?",
-                            style: TextStyle(
-                                fontSize: 36,
-                                color: Colors.red[800], // основной цвет
-                                fontWeight: FontWeight.bold),
-                          ),
+                    child: Center(
+                      child: Text(
+                        user.name!.isNotEmpty
+                            ? user.name![0].toUpperCase()
+                            : "?",
+                        style: TextStyle(
+                          fontSize: 36,
+                          color: Colors.red[800],
+                          fontWeight: FontWeight.bold,
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.red[800], // основной цвет
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Icon(Icons.edit, size: 16, color: Colors.white),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 60),
+            const SizedBox(height: 70),
 
-            // Контент профиля
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Добавить супруга
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.pink[50], // вторичный цвет
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.pink[100]!, width: 1),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '+ Добавить супруга',
-                          style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.red[800], // основной цвет
-                              fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Личная информация
+                  // -------- ЛИЧНАЯ ИНФОРМАЦИЯ --------
                   _buildProfileSection(
+                    context,
                     title: 'Личная информация',
                     icon: Icons.person_outline,
                     items: [
                       'Имя: ${user.name}',
                       'Фамилия: ${user.surname}',
                       'Отчество: ${user.patr ?? ""}',
-                      'Дата рождения',
-                      'Пол',
-                      'Город',
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Контакты
-                  _buildProfileSection(
-                    title: 'Контакты',
-                    icon: Icons.phone_android_outlined,
-                    items: [
-                      'Телефон',
                       'Email: ${user.email}',
-                      'Социальные сети',
                     ],
+                    onEdit: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const EditProfileScreen(),
+                        ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 24),
+
+                  // -------- ВЫХОД --------
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[800],
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Выйти'),
+                    onPressed: () => _confirmLogout(context),
+                  ),
                 ],
               ),
             ),
@@ -160,10 +110,13 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileSection({
+  // ---------------- SECTION ----------------
+  Widget _buildProfileSection(
+    BuildContext context, {
     required String title,
     required IconData icon,
     required List<String> items,
+    VoidCallback? onEdit,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -179,40 +132,71 @@ class ProfileScreen extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.red[800], size: 26), // основной цвет
+              Icon(icon, color: Colors.red[800]),
               const SizedBox(width: 12),
               Text(
                 title,
                 style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.red[800], // основной цвет
-                    fontWeight: FontWeight.w600),
+                  fontSize: 18,
+                  color: Colors.red[800],
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const Spacer(),
-              Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+              if (onEdit != null)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: onEdit,
+                ),
             ],
           ),
           const SizedBox(height: 16),
           ...items.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+            (e) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
               child: Row(
                 children: [
                   const SizedBox(width: 36),
                   Expanded(
                     child: Text(
-                      item,
+                      e,
                       style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                     ),
                   ),
-                  Icon(Icons.edit_outlined, color: Colors.grey[400], size: 20),
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------- LOGOUT ----------------
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Выйти из аккаунта?'),
+        content: const Text('Вы уверены, что хотите выйти?'),
+        actions: [
+          TextButton(
+            child: const Text('Отмена'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: const Text('Выйти'),
+            onPressed: () async {
+              await AuthService.logout();
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (_) => false,
+              );
+            },
           ),
         ],
       ),
