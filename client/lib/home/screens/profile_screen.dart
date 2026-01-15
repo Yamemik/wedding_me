@@ -44,9 +44,9 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        user.name!.isNotEmpty
+                        user.name != null && user.name!.isNotEmpty
                             ? user.name![0].toUpperCase()
-                            : "?",
+                            : "???",
                         style: TextStyle(
                           fontSize: 36,
                           color: Colors.red[800],
@@ -71,8 +71,8 @@ class ProfileScreen extends StatelessWidget {
                     title: 'Личная информация',
                     icon: Icons.person_outline,
                     items: [
-                      'Имя: ${user.name}',
-                      'Фамилия: ${user.surname}',
+                      'Имя: ${user.name ?? ""}',
+                      'Фамилия: ${user.surname ?? ""}',
                       'Отчество: ${user.patr ?? ""}',
                       'Email: ${user.email}',
                     ],
